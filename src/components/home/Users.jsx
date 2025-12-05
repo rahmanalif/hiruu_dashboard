@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Search, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
+import Link from 'next/link';
+import { userData } from '@/data/users';
 
 import { cn } from '@/lib/utils';
 
@@ -23,26 +25,6 @@ const TableCell = ({ children, className, ...props }) => <td className={cn("p-4 
 const UserManagement = () => {
   const [currentPage, setCurrentPage] = useState(5);
   const totalPages = 2520;
-
-  const userData = [
-    { id: '29506', name: 'Leslie Alexander', email: 'oxheart@email.com', status: 'Unverified', plan: 'Premium' },
-    { id: '29505', name: 'Marvin McKinney', email: 'mountain@email.com', status: 'Pending', plan: '-' },
-    { id: '29504', name: 'Kristin Watson', email: 'juniper@email.com', status: 'Inactive', plan: 'Premium' },
-    { id: '29503', name: 'Ralph Edwards', email: 'mountain@email.com', status: 'Verified', plan: 'Premium' },
-    { id: '29502', name: 'Darrell Steward', email: 'oxheart@email.com', status: 'Pending', plan: '-' },
-    { id: '29501', name: 'Theresa Webb', email: 'juniper@email.com', status: 'Active', plan: 'Premium' },
-    { id: '29500', name: 'Eleanor Pena', email: 'oxheart@email.com', status: 'Active', plan: 'Free' },
-    { id: '29499', name: 'Kathryn Murphy', email: 'mountain@email.com', status: 'Verified', plan: 'Premium' },
-    { id: '29499', name: 'Kathryn Murphy', email: 'mountain@email.com', status: 'Verified', plan: 'Premium' },
-    { id: '29499', name: 'Kathryn Murphy', email: 'mountain@email.com', status: 'Verified', plan: 'Premium' },
-    { id: '29499', name: 'Kathryn Murphy', email: 'mountain@email.com', status: 'Verified', plan: 'Premium' },
-    { id: '29499', name: 'Kathryn Murphy', email: 'mountain@email.com', status: 'Verified', plan: 'Premium' },
-    { id: '29499', name: 'Kathryn Murphy', email: 'mountain@email.com', status: 'Verified', plan: 'Premium' },
-    { id: '29499', name: 'Kathryn Murphy', email: 'mountain@email.com', status: 'Verified', plan: 'Premium' },
-    { id: '29499', name: 'Kathryn Murphy', email: 'mountain@email.com', status: 'Verified', plan: 'Premium' },
-    { id: '29498', name: 'Esther Howard', email: 'juniper@email.com', status: 'Verified', plan: 'Premium' },
-    { id: '29498', name: 'Esther Howard', email: 'juniper@email.com', status: 'Verified', plan: 'Premium' }
-  ];
 
   const getStatusColor = (status) => {
     const colors = {
@@ -67,8 +49,8 @@ const UserManagement = () => {
               <div className="flex items-center space-x-2">
                 <div className="relative">
                   <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                  <Input 
-                    placeholder="Search" 
+                  <Input
+                    placeholder="Search"
                     className="pl-10 w-64 bg-white"
                   />
                 </div>
@@ -78,7 +60,7 @@ const UserManagement = () => {
               </div>
             </div>
           </CardHeader>
-          
+
           <CardContent className="">
             <Table>
               <TableHeader>
@@ -98,8 +80,8 @@ const UserManagement = () => {
                     <TableCell className="text-gray-900">{user.name}</TableCell>
                     <TableCell className="text-gray-600">{user.email}</TableCell>
                     <TableCell>
-                      <Badge 
-                        variant="outline" 
+                      <Badge
+                        variant="outline"
                         className={`${getStatusColor(user.status)} font-normal`}
                       >
                         {user.status}
@@ -107,13 +89,15 @@ const UserManagement = () => {
                     </TableCell>
                     <TableCell className="text-gray-900">{user.plan}</TableCell>
                     <TableCell className="text-right">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        className="rounded-full px-6 text-blue-600 border-blue-600 hover:bg-blue-50"
-                      >
-                        View
-                      </Button>
+                      <Link href={`/users/${user.id}`}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="rounded-full px-6 text-blue-600 border-blue-600 hover:bg-blue-50"
+                        >
+                          View
+                        </Button>
+                      </Link>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -126,8 +110,8 @@ const UserManagement = () => {
                 Total User: 5025±8 & Pages: {currentPage}/{totalPages}
               </p>
               <div className="flex items-center space-x-2">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="icon"
                   onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                   disabled={currentPage === 1}
@@ -135,8 +119,8 @@ const UserManagement = () => {
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="icon"
                   onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                   disabled={currentPage === totalPages}
