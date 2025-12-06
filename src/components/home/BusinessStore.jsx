@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Search, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
-
+import BusinessProfile from '../buissness/BusinessProfile';
 import { cn } from '@/lib/utils';
 
 // Table components inline
@@ -22,7 +22,20 @@ const TableCell = ({ children, className, ...props }) => <td className={cn("p-4 
 
 const BusinessManagement = () => {
   const [currentPage, setCurrentPage] = useState(5);
+  const [selectedBusiness, setSelectedBusiness] = useState(null);
   const totalPages = 250;
+
+  if (selectedBusiness) {
+    return (
+      <BusinessProfile 
+        business={selectedBusiness} 
+        onBack={() => {
+          setSelectedBusiness(null);
+          window.history.pushState(null, '', window.location.pathname);
+        }} 
+      />
+    );
+  }
 
   const businessData = [
     { id: '29506', name: 'Tech-Haven', owner: 'Leslie Alexander', employees: 50, phone: '+30 21-1234-567', status: 'Unverified', plan: 'Premium' },
@@ -114,6 +127,10 @@ const BusinessManagement = () => {
                       <Button 
                         variant="outline" 
                         size="sm"
+                        onClick={() => {
+                          setSelectedBusiness(business);
+                          window.history.pushState(null, '', `?id=${business.id}`);
+                        }}
                         className="rounded-full px-6 text-blue-600 border-blue-600 hover:bg-blue-50"
                       >
                         View
