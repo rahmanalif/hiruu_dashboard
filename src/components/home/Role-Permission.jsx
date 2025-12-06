@@ -1,8 +1,9 @@
 "use client";
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus, SlidersHorizontal } from 'lucide-react';
+import EditRoleModal from '@/components/modals/EditRolePermissionModal';
 
 import { cn } from '@/lib/utils';
 
@@ -19,41 +20,42 @@ const TableHead = ({ children, className, ...props }) => <th className={cn("h-12
 const TableCell = ({ children, className, ...props }) => <td className={cn("p-4 align-middle text-sm", className)} {...props}>{children}</td>;
 
 const RoleManagement = () => {
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const roleData = [
-    { 
-      id: '29506', 
-      name: 'Leslie Alexander', 
-      email: 'oxheart@email.com', 
-      access: 'View Reports', 
-      role: 'Admin' 
+    {
+      id: '29506',
+      name: 'Leslie Alexander',
+      email: 'oxheart@email.com',
+      access: 'View Reports',
+      role: 'Admin'
     },
-    { 
-      id: '29505', 
-      name: 'Marvin McKinney', 
-      email: 'mountain@email.com', 
-      access: 'Access Support, Ban User...', 
-      role: 'Sales & Marketing' 
+    {
+      id: '29505',
+      name: 'Marvin McKinney',
+      email: 'mountain@email.com',
+      access: 'Access Support, Ban User...',
+      role: 'Sales & Marketing'
     },
-    { 
-      id: '29504', 
-      name: 'Kristin Watson', 
-      email: 'juniper@email.com', 
-      access: 'Manage user, Ban User', 
-      role: 'Help & Support' 
+    {
+      id: '29504',
+      name: 'Kristin Watson',
+      email: 'juniper@email.com',
+      access: 'Manage user, Ban User',
+      role: 'Help & Support'
     },
-    { 
-      id: '29502', 
-      name: 'Darrell Steward', 
-      email: 'oxheart@email.com', 
-      access: 'Manage subscriptions', 
-      role: 'Sales & Marketing' 
+    {
+      id: '29502',
+      name: 'Darrell Steward',
+      email: 'oxheart@email.com',
+      access: 'Manage subscriptions',
+      role: 'Sales & Marketing'
     },
-    { 
-      id: '29501', 
-      name: 'Theresa Webb', 
-      email: 'juniper@email.com', 
-      access: 'View Reports', 
-      role: 'Admin' 
+    {
+      id: '29501',
+      name: 'Theresa Webb',
+      email: 'juniper@email.com',
+      access: 'View Reports',
+      role: 'Admin'
     }
   ];
 
@@ -76,7 +78,7 @@ const RoleManagement = () => {
               </div>
             </div>
           </CardHeader>
-          
+
           <CardContent className="p-0">
             <Table>
               <TableHeader>
@@ -98,10 +100,11 @@ const RoleManagement = () => {
                     <TableCell className="text-gray-900">{employee.access}</TableCell>
                     <TableCell className="text-gray-900">{employee.role}</TableCell>
                     <TableCell className="text-right">
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         size="sm"
                         className="rounded-full px-6 text-blue-600 border-blue-600 hover:bg-blue-50"
+                        onClick={() => setIsEditModalOpen(true)}
                       >
                         Edit
                       </Button>
@@ -113,6 +116,7 @@ const RoleManagement = () => {
           </CardContent>
         </Card>
       </div>
+      <EditRoleModal open={isEditModalOpen} onOpenChange={setIsEditModalOpen} />
     </div>
   );
 };

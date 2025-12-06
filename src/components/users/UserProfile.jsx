@@ -8,10 +8,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import BanUserModal from '@/components/modals/BanUserModal';
 
 export default function UserProfileActivity() {
     const [activeTab, setActiveTab] = useState('all');
     const [mainTab, setMainTab] = useState('account');
+    const [isBanModalOpen, setIsBanModalOpen] = useState(false);
 
     const activityItems = [
         {
@@ -265,7 +267,7 @@ export default function UserProfileActivity() {
 
                     <div className="flex gap-3 mt-6">
                         <Button className="flex-1 bg-[#4FB2F3] hover:bg-[#4FB2F3]">Chat</Button>
-                        <Button variant="destructive" className="flex-1">Ban</Button>
+                        <Button variant="destructive" className="flex-1" onClick={() => setIsBanModalOpen(true)}>Ban</Button>
                     </div>
                 </div>
 
@@ -446,7 +448,7 @@ export default function UserProfileActivity() {
                                         {activityLogItems.map((item) => (
                                             <div key={item.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
                                                 <div className="flex items-start gap-3">
-                                                    <div className={`${item.bgColor} w-12 h-12 rounded-lg flex items-center justify-center text-white font-bold flex-shrink-0`}>
+                                                    <div className={`${item.bgColor} w-12 h-12 rounded-lg flex items-center justify-center text-white font-bold shrink-0`}>
                                                         {item.logo}
                                                     </div>
                                                     <div className="flex-1 min-w-0">
@@ -466,6 +468,11 @@ export default function UserProfileActivity() {
                     </Tabs>
                 </div>
             </div>
+            <BanUserModal
+                open={isBanModalOpen}
+                onOpenChange={setIsBanModalOpen}
+                userName="Rohan Mehta"
+            />
         </div>
     );
 }

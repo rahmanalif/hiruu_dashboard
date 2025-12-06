@@ -5,9 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Search, Filter, TrendingUp, TrendingDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import CouponWizardModal from '@/components/modals/AddNewOfferModal';
+import ViewCouponModal from '@/components/modals/ViewCoupon';
 
 const GiftsCouponsTable = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [isAddOfferModalOpen, setIsAddOfferModalOpen] = useState(false);
+  const [isViewCouponModalOpen, setIsViewCouponModalOpen] = useState(false);
+  const [selectedCoupon, setSelectedCoupon] = useState(null);
 
   const stats = [
     { label: 'Total Redemptions', value: '19990', change: '+11.01%', trending: 'up' },
@@ -43,7 +48,10 @@ const GiftsCouponsTable = () => {
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-semibold text-gray-900">Gifts & Coupons</h1>
-          <Button className="bg-[#4FB2F3] hover:bg-[#408bbd] text-white">
+          <Button
+            className="bg-[#4FB2F3] hover:bg-[#408bbd] text-white"
+            onClick={() => setIsAddOfferModalOpen(true)}
+          >
             <Plus className="w-4 h-4 mr-2" />
             Add New Offer
           </Button>
@@ -119,7 +127,7 @@ const GiftsCouponsTable = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{coupon.target}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{coupon.expiry}</td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <Badge 
+                        <Badge
                           variant={coupon.status === 'Active' ? 'default' : 'secondary'}
                           className={coupon.status === 'Active' ? 'bg-green-100 text-green-800 hover:bg-green-100' : 'bg-gray-100 text-gray-800 hover:bg-gray-100'}
                         >
@@ -127,7 +135,15 @@ const GiftsCouponsTable = () => {
                         </Badge>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <Button variant="outline" size="sm" className="text-blue-600 border-blue-600 hover:bg-blue-50">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-blue-600 border-blue-600 hover:bg-blue-50"
+                          onClick={() => {
+                            setSelectedCoupon(coupon);
+                            setIsViewCouponModalOpen(true);
+                          }}
+                        >
                           View
                         </Button>
                       </td>
@@ -154,6 +170,24 @@ const GiftsCouponsTable = () => {
           </CardContent>
         </Card>
       </div>
+
+      <CouponWizardModal
+        open={isAddOfferModalOpen}
+        onOpenChange={setIsAddOfferModalOpen}
+      />
+
+      <ViewCouponModal
+        open={isViewCouponModalOpen}
+        onOpenChange={setIsViewCouponModalOpen}
+        couponData={selectedCoupon ? {
+          campaignName: selectedCoupon.campaign,
+          couponName: selectedCoupon.code,
+          discount: selectedCoupon.discount,
+          usage: selectedCoupon.uses,
+          targetAudience: selectedCoupon.target,
+          expiry: selectedCoupon.expiry
+        } : undefined}
+      />
     </div>
   );
 };
