@@ -53,9 +53,7 @@ const RewardsManagement = () => {
                     className="pl-10 w-64 bg-white"
                   />
                 </div>
-                <Button variant="outline" size="icon" className="bg-white w-9 h-9">
-                  <SlidersHorizontal className="w-5 h-5" />
-                </Button>
+                
               </div>
             </div>
           </CardHeader>

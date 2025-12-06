@@ -36,10 +36,6 @@ const PaymentsTable = () => {
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-semibold text-gray-900">Payments</h1>
-          <Button variant="outline" className="border-cyan-500 text-cyan-600 hover:bg-cyan-50">
-            All
-            <ChevronDown className="w-4 h-4 ml-2" />
-          </Button>
         </div>
 
         {/* Table Card */}
@@ -59,9 +55,6 @@ const PaymentsTable = () => {
                     className="pl-10 w-64 h-9 bg-white"
                   />
                 </div>
-                <Button variant="outline" size="sm" className="h-9">
-                  <Filter className="w-4 h-4" />
-                </Button>
               </div>
             </div>
 

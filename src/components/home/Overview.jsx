@@ -175,9 +175,7 @@ const Overview = () => {
                   <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                   <Input placeholder="Search" className="pl-10 w-64" />
                 </div>
-                <Button variant="outline" size="icon">
-                  <Filter className="w-4 h-4" />
-                </Button>
+                
               </div>
             </div>
           </CardHeader>
