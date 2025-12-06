@@ -3,6 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, Bell, Star, Languages } from 'lucide-react';
+import Link from 'next/link';
 
 const TopNavbar = ({ breadcrumbs = [] }) => {
   return (
@@ -40,10 +41,12 @@ const TopNavbar = ({ breadcrumbs = [] }) => {
           <Button variant="ghost" size="icon" className="h-8 w-8">
             <Languages className="w-5 h-5 text-gray-600" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 relative">
-            <Bell className="w-5 h-5 text-gray-600" />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-          </Button>
+          <Link href="/notifications">
+            <Button variant="ghost" size="icon" className="h-8 w-8 relative">
+              <Bell className="w-5 h-5 text-gray-600" />
+              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+            </Button>
+          </Link>
           <div className="relative ml-2">
             <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <Input

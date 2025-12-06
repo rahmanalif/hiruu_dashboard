@@ -26,9 +26,23 @@ import {
   MessageSquare,
   AlertCircle
 } from 'lucide-react';
+import BusinessProfile from '../buissness/BusinessProfile';
 
 const Overview = () => {
   const [selectedPeriod, setSelectedPeriod] = useState('Month');
+  const [selectedBusiness, setSelectedBusiness] = useState(null);
+
+  if (selectedBusiness) {
+    return (
+      <BusinessProfile 
+        business={selectedBusiness} 
+        onBack={() => {
+          setSelectedBusiness(null);
+          window.history.pushState(null, '', window.location.pathname);
+        }} 
+      />
+    );
+  }
 
   const statsData = [
     { title: 'New users', value: '1,025', change: '+11.01%', isPositive: true },
@@ -208,7 +222,16 @@ const Overview = () => {
                     </TableCell>
                     <TableCell>{business.plan}</TableCell>
                     <TableCell>
-                      <Button variant="outline" size="sm">View</Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          setSelectedBusiness(business);
+                          window.history.pushState(null, '', `?id=${business.id}`);
+                        }}
+                      >
+                        View
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
