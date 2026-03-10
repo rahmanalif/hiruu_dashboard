@@ -1,10 +1,5 @@
-import DashboardLayout from '@/components/layout/DashboardLayout';
-import Overview from '@/components/home/Overview';
+import { redirect } from "next/navigation";
 
 export default function Home() {
-  return (
-    <DashboardLayout breadcrumbs={['Dashboards', 'Overview']}>
-      <Overview />
-    </DashboardLayout>
-  );
+  redirect("/login");
 }

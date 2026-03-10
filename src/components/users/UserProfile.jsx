@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { ChevronLeft, Star, MapPin, Phone, Calendar, Globe, Building2, Menu } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,6 +12,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import BanUserModal from '@/components/modals/BanUserModal';
 
 export default function UserProfileActivity() {
+    const router = useRouter();
     const [activeTab, setActiveTab] = useState('all');
     const [mainTab, setMainTab] = useState('account');
     const [isBanModalOpen, setIsBanModalOpen] = useState(false);
@@ -155,7 +157,17 @@ export default function UserProfileActivity() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Left Sidebar - User Profile */}
                 <div className="lg:col-span-1">
-                    <Button variant="ghost" className="mb-4 pl-0">
+                    <Button
+                        variant="ghost"
+                        className="mb-4 pl-0"
+                        onClick={() => {
+                            if (window.history.length > 1) {
+                                router.back();
+                            } else {
+                                router.push('/users');
+                            }
+                        }}
+                    >
                         <ChevronLeft className="w-4 h-4 mr-2" />
                         User
                     </Button>

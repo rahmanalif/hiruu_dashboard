@@ -2,7 +2,8 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { useDispatch, useSelector } from 'react-redux';
 import {
   Settings,
   Users,
@@ -14,9 +15,14 @@ import {
   LayoutDashboard,
   LogOut
 } from 'lucide-react';
+import { logoutUser } from '@/store/authSlice';
 
 const Sidebar = () => {
+  const dispatch = useDispatch();
+  const router = useRouter();
   const pathname = usePathname();
+  const authStatus = useSelector((state) => state.auth.status);
+  const currentUser = useSelector((state) => state.auth.user);
 
   const getLinkClassName = (path) => {
     const isActive = pathname === path;
@@ -34,7 +40,7 @@ const Sidebar = () => {
       </div>
 
       <nav className="flex-1 px-4 space-y-1">
-        <Link href="/" className={getLinkClassName('/')}>
+        <Link href="/home" className={getLinkClassName('/home')}>
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
             <path d="M4 6C4 5.05719 4 4.58579 4.29289 4.29289C4.58579 4 5.05719 4 6 4H8C8.94281 4 9.41421 4 9.70711 4.29289C10 4.58579 10 5.05719 10 6V8C10 8.94281 10 9.41421 9.70711 9.70711C9.41421 10 8.94281 10 8 10H6C5.05719 10 4.58579 10 4.29289 9.70711C4 9.41421 4 8.94281 4 8V6Z" stroke="#11293A" strokeLinejoin="round"/>
             <path d="M4 16C4 15.0572 4 14.5858 4.29289 14.2929C4.58579 14 5.05719 14 6 14H8C8.94281 14 9.41421 14 9.70711 14.2929C10 14.5858 10 15.0572 10 16V18C10 18.9428 10 19.4142 9.70711 19.7071C9.41421 20 8.94281 20 8 20H6C5.05719 20 4.58579 20 4.29289 19.7071C4 19.4142 4 18.9428 4 18V16Z" stroke="#11293A" strokeLinejoin="round"/>
@@ -95,18 +101,35 @@ const Sidebar = () => {
       </nav>
 
       <div className="p-4 border-t border-gray-200">
-        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+        <button
+          type="button"
+          onClick={async () => {
+            const result = await dispatch(logoutUser());
+            if (logoutUser.fulfilled.match(result)) {
+              router.push('/login');
+            }
+          }}
+          disabled={authStatus === "loading"}
+          className="w-full flex items-center justify-between p-3 bg-gray-50 rounded-lg text-left cursor-pointer disabled:opacity-60"
+        >
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
-              A
+              {currentUser?.name?.[0]?.toUpperCase() || 'A'}
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-900">Admin User</p>
-              <p className="text-xs text-gray-500">admin@hirvu.com</p>
+              <p className="text-sm font-medium text-gray-900">
+                {currentUser?.name || 'Admin User'}
+              </p>
+              <p className="text-xs text-gray-500">
+                {currentUser?.email || 'admin@hirvu.com'}
+              </p>
             </div>
           </div>
-          <LogOut className="w-4 h-4 text-gray-400" />
-        </div>
+          <div className="flex items-center gap-2 text-gray-500">
+            <span className="text-xs font-medium">Logout</span>
+            <LogOut className="w-4 h-4 text-gray-400" />
+          </div>
+        </button>
         <div className="mt-2 text-center">
           <Badge variant="secondary" className="text-xs">Super Admin</Badge>
           <p className="text-xs text-gray-500 mt-1">Full access</p>

@@ -1,5 +1,7 @@
 "use client";
 import React, { useState } from 'react';
+import { useDispatch, useSelector } from "react-redux";
+import { forgotPassword, loginUser, resetPassword } from "@/store/authSlice";
 import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,6 +11,9 @@ import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
 
 const AuthFlow = () => {
   const router = useRouter();
+  const dispatch = useDispatch();
+  const authStatus = useSelector((state) => state.auth.status);
+  const authError = useSelector((state) => state.auth.error);
   const [currentScreen, setCurrentScreen] = useState('login'); // login, forgot, otp, reset
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -16,7 +21,7 @@ const AuthFlow = () => {
   const [rememberMe, setRememberMe] = useState(false);
   
   // Form states
-  const [username, setUsername] = useState('');
+  const [loginEmail, setLoginEmail] = useState('');
   const [password, setPassword] = useState('');
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
@@ -68,10 +73,10 @@ const AuthFlow = () => {
           <div className="space-y-4">
             <div>
               <Input
-                type="text"
-                placeholder="User name"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                type="email"
+                placeholder="Email"
+                value={loginEmail}
+                onChange={(e) => setLoginEmail(e.target.value)}
                 className="h-12"
               />
             </div>
@@ -112,11 +117,28 @@ const AuthFlow = () => {
               </button>
             </div>
 
-            <Button 
-              onClick={() => router.push('/')}
+            {authError ? (
+              <p className="text-sm text-red-600">{authError}</p>
+            ) : null}
+
+            <Button
+              disabled={authStatus === "loading"}
+              onClick={async () => {
+                const result = await dispatch(
+                  loginUser({
+                    email: loginEmail,
+                    password,
+                    rememberMe,
+                    fcmToken: null,
+                  })
+                );
+                if (loginUser.fulfilled.match(result)) {
+                  router.push('/home');
+                }
+              }}
               className="w-full h-12 bg-blue-500 hover:bg-blue-600 text-white text-base"
             >
-              Sign In
+              {authStatus === "loading" ? "Signing In..." : "Sign In"}
             </Button>
           </div>
         </div>
@@ -164,11 +186,21 @@ const AuthFlow = () => {
               />
             </div>
 
-            <Button 
-              onClick={() => setCurrentScreen('otp')}
+            {authError ? (
+              <p className="text-sm text-red-600">{authError}</p>
+            ) : null}
+
+            <Button
+              disabled={authStatus === "loading"}
+              onClick={async () => {
+                const result = await dispatch(forgotPassword({ email }));
+                if (forgotPassword.fulfilled.match(result)) {
+                  setCurrentScreen('otp');
+                }
+              }}
               className="w-full h-12 bg-blue-500 hover:bg-blue-600 text-white text-base"
             >
-              Send OTP
+              {authStatus === "loading" ? "Sending..." : "Send OTP"}
             </Button>
           </div>
         </div>
@@ -308,11 +340,28 @@ const AuthFlow = () => {
               </button>
             </div>
 
-            <Button 
-              onClick={() => setCurrentScreen('login')}
+            {authError ? (
+              <p className="text-sm text-red-600">{authError}</p>
+            ) : null}
+
+            <Button
+              disabled={authStatus === "loading"}
+              onClick={async () => {
+                const otpCode = otp.join("");
+                const result = await dispatch(
+                  resetPassword({
+                    email,
+                    otp: otpCode,
+                    password: newPassword,
+                  })
+                );
+                if (resetPassword.fulfilled.match(result)) {
+                  setCurrentScreen('login');
+                }
+              }}
               className="w-full h-12 bg-blue-500 hover:bg-blue-600 text-white text-base"
             >
-              Reset Password
+              {authStatus === "loading" ? "Resetting..." : "Reset Password"}
             </Button>
           </div>
         </div>
