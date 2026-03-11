@@ -42,7 +42,7 @@ const AuthFlow = () => {
   };
 
   // Login Screen
-  const LoginScreen = () => (
+  const renderLoginScreen = () => (
     <div className="grid grid-cols-1 lg:grid-cols-2 min-h-screen bg-white">
       {/* Left Side - Illustration */}
       <div className="hidden lg:flex items-center justify-center bg-[#F4F4F4] p-12">
@@ -147,7 +147,7 @@ const AuthFlow = () => {
   );
 
   // Forgot Password Screen
-  const ForgotPasswordScreen = () => (
+  const renderForgotPasswordScreen = () => (
     <div className="grid grid-cols-1 lg:grid-cols-2 min-h-screen bg-gray-100">
       {/* Left Side - Illustration */}
       <div className="hidden lg:flex items-center justify-center bg-gray-50 p-12">
@@ -209,7 +209,7 @@ const AuthFlow = () => {
   );
 
   // OTP Verification Screen
-  const OtpScreen = () => (
+  const renderOtpScreen = () => (
     <div className="grid grid-cols-1 lg:grid-cols-2 min-h-screen bg-gray-100">
       {/* Left Side - Illustration */}
       <div className="hidden lg:flex items-center justify-center bg-gray-50 p-12">
@@ -271,7 +271,7 @@ const AuthFlow = () => {
   );
 
   // Reset Password Screen
-  const ResetPasswordScreen = () => (
+  const renderResetPasswordScreen = () => (
     <div className="grid grid-cols-1 lg:grid-cols-2 min-h-screen bg-gray-100">
       {/* Left Side - Illustration */}
       <div className="hidden lg:flex items-center justify-center bg-gray-50 p-12">
@@ -371,10 +371,10 @@ const AuthFlow = () => {
 
   return (
     <>
-      {currentScreen === 'login' && <LoginScreen />}
-      {currentScreen === 'forgot' && <ForgotPasswordScreen />}
-      {currentScreen === 'otp' && <OtpScreen />}
-      {currentScreen === 'reset' && <ResetPasswordScreen />}
+      {currentScreen === 'login' && renderLoginScreen()}
+      {currentScreen === 'forgot' && renderForgotPasswordScreen()}
+      {currentScreen === 'otp' && renderOtpScreen()}
+      {currentScreen === 'reset' && renderResetPasswordScreen()}
     </>
   );
 };
