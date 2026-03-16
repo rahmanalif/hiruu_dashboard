@@ -57,7 +57,7 @@ export default function EditRoleModal({
                         <div className="flex items-center gap-2">
                             <Lock className="h-4 w-4" />
                             <DialogTitle className="text-lg font-medium">
-                                Edit Role & Permission
+                                Add Maintainer
                             </DialogTitle>
                         </div>
                         <button
@@ -163,7 +163,7 @@ export default function EditRoleModal({
                     </div>
                 </div>
 
-                <DialogFooter className="gap-2 sm:gap-0">
+                <DialogFooter className="gap-4 sm:gap-0">
                     <Button variant="outline" onClick={() => onOpenChange(false)}>
                         Cancel
                     </Button>

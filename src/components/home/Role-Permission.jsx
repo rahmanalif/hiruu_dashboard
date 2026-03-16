@@ -1,11 +1,12 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, SlidersHorizontal } from 'lucide-react';
-import EditRoleModal from '@/components/modals/EditRolePermissionModal';
-
+import { Plus } from 'lucide-react';
+import AddMaintainerModal from '@/components/modals/AddMaintainerModal';
+import EditMaintainerModal from '@/components/modals/EditMaintainerModal';
 import { cn } from '@/lib/utils';
+import { readStoredAuth, resolveAccessToken } from '@/lib/auth';
 
 // Table components inline
 const Table = ({ children, className, ...props }) => (
@@ -19,52 +20,95 @@ const TableRow = ({ children, className, ...props }) => <tr className={cn("borde
 const TableHead = ({ children, className, ...props }) => <th className={cn("h-12 px-4 text-left align-middle font-medium text-gray-700 text-sm", className)} {...props}>{children}</th>;
 const TableCell = ({ children, className, ...props }) => <td className={cn("p-4 align-middle text-sm", className)} {...props}>{children}</td>;
 
-const RoleManagement = () => {
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const roleData = [
-    {
-      id: '29506',
-      name: 'Leslie Alexander',
-      email: 'oxheart@email.com',
-      access: 'View Reports',
-      role: 'Admin'
-    },
-    {
-      id: '29505',
-      name: 'Marvin McKinney',
-      email: 'mountain@email.com',
-      access: 'Access Support, Ban User...',
-      role: 'Sales & Marketing'
-    },
-    {
-      id: '29504',
-      name: 'Kristin Watson',
-      email: 'juniper@email.com',
-      access: 'Manage user, Ban User',
-      role: 'Help & Support'
-    },
-    {
-      id: '29502',
-      name: 'Darrell Steward',
-      email: 'oxheart@email.com',
-      access: 'Manage subscriptions',
-      role: 'Sales & Marketing'
-    },
-    {
-      id: '29501',
-      name: 'Theresa Webb',
-      email: 'juniper@email.com',
-      access: 'View Reports',
-      role: 'Admin'
-    }
-  ];
+const formatPermissionKey = (permissionKey) =>
+  permissionKey
+    .split(".")
+    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .join(" ");
 
+const formatAccess = (permissions) => {
+  if (!permissions || typeof permissions !== "object") {
+    return "N/A";
+  }
+
+  const entries = Object.entries(permissions);
+  if (!entries.length) {
+    return "N/A";
+  }
+
+  return entries
+    .map(([key, value]) => `${formatPermissionKey(key)} (${value})`)
+    .join(", ");
+};
+
+const RoleManagement = () => {
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [selectedRole, setSelectedRole] = useState('All');
+  const [roleData, setRoleData] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [selectedMaintainer, setSelectedMaintainer] = useState(null);
 
-  const filterOptions = ['Admin', 'Sales & Marketing', 'Help & Support'];
+  useEffect(() => {
+    const fetchMaintainers = async () => {
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+      if (!baseUrl) {
+        setError("Missing NEXT_PUBLIC_API_BASE_URL");
+        setIsLoading(false);
+        return;
+      }
 
-  const filteredRoleData = roleData.filter(employee => {
+      const accessToken = resolveAccessToken(readStoredAuth()?.tokens);
+      if (!accessToken) {
+        setError("Missing access token");
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const response = await fetch(`${baseUrl}/maintainers`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
+
+        const payload = await response.json().catch(() => null);
+
+        if (!response.ok || !payload?.success) {
+          throw new Error(payload?.message || "Failed to load maintainers");
+        }
+
+        const maintainers = Array.isArray(payload?.data) ? payload.data : [];
+        setRoleData(
+          maintainers.map((maintainer) => ({
+            id: maintainer.id,
+            name: maintainer.user?.name || "N/A",
+            email: maintainer.user?.email || "N/A",
+            access: formatAccess(maintainer.platformRole?.permissions),
+            role: maintainer.platformRole?.name || "N/A",
+          }))
+        );
+        setError(null);
+      } catch (fetchError) {
+        setError(fetchError?.message || "Failed to load maintainers");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchMaintainers();
+  }, []);
+
+  const filterOptions = useMemo(
+    () => [...new Set(roleData.map((employee) => employee.role).filter(Boolean))],
+    [roleData]
+  );
+
+  const filteredRoleData = roleData.filter((employee) => {
     if (selectedRole === 'All') return true;
     return employee.role === selectedRole;
   });
@@ -79,13 +123,18 @@ const RoleManagement = () => {
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg font-semibold text-gray-900">Role & Permission</CardTitle>
               <div className="flex items-center space-x-2">
+                
                 <Button 
                   variant="outline" 
                   size="icon" 
-                  className="bg-white w-9 h-9"
-                  onClick={() => setIsEditModalOpen(true)}
+                  className="bg-white w-40 h-9"
+                  onClick={() => setIsAddModalOpen(true)}
                 >
+                  
                   <Plus className="w-5 h-5" />
+                  Add Maintainer
+                  {/* <div className='m-2 p-2'>Add Mainterner</div> */}
+
                 </Button>
                 <div className="relative">
                   <Button 
@@ -130,7 +179,7 @@ const RoleManagement = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Employee ID</TableHead>
+                  {/* <TableHead>Employee ID</TableHead> */}
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Access</TableHead>
@@ -139,31 +188,65 @@ const RoleManagement = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredRoleData.map((employee) => (
-                  <TableRow key={employee.id}>
-                    <TableCell className="font-medium text-gray-900">{employee.id}</TableCell>
-                    <TableCell className="text-gray-900">{employee.name}</TableCell>
-                    <TableCell className="text-gray-600">{employee.email}</TableCell>
-                    <TableCell className="text-gray-900">{employee.access}</TableCell>
-                    <TableCell className="text-gray-900">{employee.role}</TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="rounded-full px-6 text-blue-600 border-blue-600 hover:bg-blue-50"
-                        onClick={() => setIsEditModalOpen(true)}
-                      >
-                        Edit
-                      </Button>
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center text-gray-500">
+                      Loading maintainers...
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : error ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center text-red-500">
+                      {error}
+                    </TableCell>
+                  </TableRow>
+                ) : filteredRoleData.length ? (
+                  filteredRoleData.map((employee) => (
+                    <TableRow key={employee.id}>
+                      <TableCell className="text-gray-900">{employee.name}</TableCell>
+                      <TableCell className="text-gray-600">{employee.email}</TableCell>
+                      <TableCell className="text-gray-900">{employee.access}</TableCell>
+                      <TableCell className="text-gray-900">{employee.role}</TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="rounded-full px-6 text-blue-600 border-blue-600 hover:bg-blue-50"
+                          onClick={() => {
+                            setSelectedMaintainer(employee);
+                            setIsEditModalOpen(true);
+                          }}
+                        >
+                          Edit
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center text-gray-500">
+                      No maintainers found.
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </CardContent>
         </Card>
       </div>
-      <EditRoleModal open={isEditModalOpen} onOpenChange={setIsEditModalOpen} />
+      <AddMaintainerModal open={isAddModalOpen} onOpenChange={setIsAddModalOpen} />
+      <EditMaintainerModal
+        key={selectedMaintainer?.id || 'edit-maintainer'}
+        open={isEditModalOpen}
+        onOpenChange={(open) => {
+          setIsEditModalOpen(open);
+          if (!open) {
+            setSelectedMaintainer(null);
+          }
+        }}
+        maintainer={selectedMaintainer}
+        roleOptions={filterOptions}
+      />
     </div>
   );
 };
