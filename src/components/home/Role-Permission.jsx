@@ -118,7 +118,7 @@ const RoleManagement = () => {
       <div className="">
         <h1 className="text-2xl font-bold text-gray-900 mb-6">Role Management</h1>
 
-        <Card>
+        <Card className="py-0">
           <CardHeader className="border-b bg-[#ECF7FE] p-4">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg font-semibold text-gray-900">Role & Permission</CardTitle>
