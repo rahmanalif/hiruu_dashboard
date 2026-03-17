@@ -41,6 +41,56 @@ const formatAccess = (permissions) => {
     .join(", ");
 };
 
+const getInitials = (name) => {
+  if (!name || name === "N/A") {
+    return "NA";
+  }
+
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join("");
+};
+
+const EmployeeAvatar = ({ src, name }) => {
+  const [hasError, setHasError] = useState(false);
+
+  if (src && !hasError) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={src}
+        alt={name}
+        className="h-full w-full object-cover"
+        onError={() => setHasError(true)}
+      />
+    );
+  }
+
+  return getInitials(name);
+};
+
+const resolveAvatarUrl = (avatarPath) => {
+  if (!avatarPath) {
+    return "";
+  }
+
+  if (avatarPath.startsWith("http://") || avatarPath.startsWith("https://")) {
+    return avatarPath;
+  }
+
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "";
+  const origin = baseUrl.replace(/\/api\/v1\/?$/, "/");
+
+  try {
+    return new URL(avatarPath, origin).toString();
+  } catch {
+    return avatarPath;
+  }
+};
+
 const RoleManagement = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -51,55 +101,57 @@ const RoleManagement = () => {
   const [error, setError] = useState(null);
   const [selectedMaintainer, setSelectedMaintainer] = useState(null);
 
+  const fetchMaintainers = async () => {
+    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+    if (!baseUrl) {
+      setError("Missing NEXT_PUBLIC_API_BASE_URL");
+      setIsLoading(false);
+      return;
+    }
+
+    const accessToken = resolveAccessToken(readStoredAuth()?.tokens);
+    if (!accessToken) {
+      setError("Missing access token");
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(`${baseUrl}/maintainers`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok || !payload?.success) {
+        throw new Error(payload?.message || "Failed to load maintainers");
+      }
+
+      const maintainers = Array.isArray(payload?.data) ? payload.data : [];
+      setRoleData(
+        maintainers.map((maintainer) => ({
+          id: maintainer.id,
+          roleId: maintainer.roleId || maintainer.platformRole?.id || "",
+          name: maintainer.user?.name || "N/A",
+          email: maintainer.user?.email || "N/A",
+          access: formatAccess(maintainer.platformRole?.permissions),
+          role: maintainer.platformRole?.name || "N/A",
+          avatar: resolveAvatarUrl(maintainer.user?.avatar),
+        }))
+      );
+      setError(null);
+    } catch (fetchError) {
+      setError(fetchError?.message || "Failed to load maintainers");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchMaintainers = async () => {
-      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-      if (!baseUrl) {
-        setError("Missing NEXT_PUBLIC_API_BASE_URL");
-        setIsLoading(false);
-        return;
-      }
-
-      const accessToken = resolveAccessToken(readStoredAuth()?.tokens);
-      if (!accessToken) {
-        setError("Missing access token");
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        const response = await fetch(`${baseUrl}/maintainers`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken}`,
-          },
-        });
-
-        const payload = await response.json().catch(() => null);
-
-        if (!response.ok || !payload?.success) {
-          throw new Error(payload?.message || "Failed to load maintainers");
-        }
-
-        const maintainers = Array.isArray(payload?.data) ? payload.data : [];
-        setRoleData(
-          maintainers.map((maintainer) => ({
-            id: maintainer.id,
-            name: maintainer.user?.name || "N/A",
-            email: maintainer.user?.email || "N/A",
-            access: formatAccess(maintainer.platformRole?.permissions),
-            role: maintainer.platformRole?.name || "N/A",
-          }))
-        );
-        setError(null);
-      } catch (fetchError) {
-        setError(fetchError?.message || "Failed to load maintainers");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchMaintainers();
   }, []);
 
@@ -203,7 +255,17 @@ const RoleManagement = () => {
                 ) : filteredRoleData.length ? (
                   filteredRoleData.map((employee) => (
                     <TableRow key={employee.id}>
-                      <TableCell className="text-gray-900">{employee.name}</TableCell>
+                      <TableCell className="text-gray-900">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-blue-100 text-xs font-semibold text-blue-700">
+                            <EmployeeAvatar
+                              src={employee.avatar}
+                              name={employee.name}
+                            />
+                          </div>
+                          <span>{employee.name}</span>
+                        </div>
+                      </TableCell>
                       <TableCell className="text-gray-600">{employee.email}</TableCell>
                       <TableCell className="text-gray-900">{employee.access}</TableCell>
                       <TableCell className="text-gray-900">{employee.role}</TableCell>
@@ -234,7 +296,14 @@ const RoleManagement = () => {
           </CardContent>
         </Card>
       </div>
-      <AddMaintainerModal open={isAddModalOpen} onOpenChange={setIsAddModalOpen} />
+      <AddMaintainerModal
+        open={isAddModalOpen}
+        onOpenChange={setIsAddModalOpen}
+        onSuccess={async () => {
+          setIsLoading(true);
+          await fetchMaintainers();
+        }}
+      />
       <EditMaintainerModal
         key={selectedMaintainer?.id || 'edit-maintainer'}
         open={isEditModalOpen}
@@ -245,7 +314,10 @@ const RoleManagement = () => {
           }
         }}
         maintainer={selectedMaintainer}
-        roleOptions={filterOptions}
+        onSuccess={async () => {
+          setIsLoading(true);
+          await fetchMaintainers();
+        }}
       />
     </div>
   );

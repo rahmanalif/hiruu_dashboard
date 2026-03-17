@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import {
   Dialog,
   DialogContent,
@@ -19,16 +20,117 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Lock, Upload, X, Check } from "lucide-react";
+import {
+  createMaintainer,
+  fetchMaintainerRoles,
+  resetCreateMaintainerState,
+} from "@/store/maintainerRolesSlice";
+import { canAssignRole, resolveUserPermissions } from "@/lib/permissions";
 
-export default function AddMaintainerModal({ open, onOpenChange }) {
+const formatPermissionKey = (permissionKey) =>
+  permissionKey
+    .split(".")
+    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .join(" ");
+
+export default function AddMaintainerModal({
+  open,
+  onOpenChange,
+  onSuccess,
+}) {
+  const dispatch = useDispatch();
+  const fileInputRef = useRef(null);
+  const currentUser = useSelector((state) => state.auth.user);
+  const { roles, status, error, createStatus, createError } = useSelector(
+    (state) => state.maintainerRoles
+  );
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState("Sales & Marketing");
+  const [role, setRole] = useState("");
   const [isDragging, setIsDragging] = useState(false);
+  const [avatar, setAvatar] = useState(null);
+
+  useEffect(() => {
+    if (open && (status === "idle" || (status === "failed" && !roles.length))) {
+      dispatch(fetchMaintainerRoles());
+    }
+  }, [dispatch, open, roles.length, status]);
+
+  useEffect(() => {
+    if (!open) {
+      dispatch(resetCreateMaintainerState());
+    }
+  }, [dispatch, open]);
+
+  const avatarPreview = useMemo(() => {
+    if (!avatar) {
+      return "";
+    }
+
+    return URL.createObjectURL(avatar);
+  }, [avatar]);
+
+  useEffect(() => {
+    return () => {
+      if (avatarPreview) {
+        URL.revokeObjectURL(avatarPreview);
+      }
+    };
+  }, [avatarPreview]);
+
+  const selectedRole = useMemo(
+    () => roles.find((roleOption) => roleOption.id === role) || null,
+    [role, roles]
+  );
+
+  const permissionText = useMemo(() => {
+    const permissions = selectedRole?.permissions;
+    if (!permissions || typeof permissions !== "object") {
+      return "Select a role to see permissions";
+    }
+
+    const entries = Object.entries(permissions);
+    if (!entries.length) {
+      return "No permissions assigned";
+    }
+
+    return entries
+      .map(([key, value]) => `${formatPermissionKey(key)} (${value})`)
+      .join(", ");
+  }, [selectedRole]);
+
+  const allowedRoles = useMemo(() => {
+    const userPermissions = resolveUserPermissions(currentUser);
+    return roles.filter((roleOption) =>
+      canAssignRole(userPermissions, roleOption.permissions)
+    );
+  }, [currentUser, roles]);
 
   const handleSave = () => {
-    console.log({ name, email, role });
-    onOpenChange(false);
+    if (!name.trim() || !email.trim() || !role) {
+      return;
+    }
+
+    dispatch(
+      createMaintainer({
+        name,
+        email,
+        roleId: role,
+        avatar,
+      })
+    )
+      .unwrap()
+      .then(async () => {
+        setName("");
+        setEmail("");
+        setRole("");
+        setAvatar(null);
+        onOpenChange(false);
+        if (typeof onSuccess === "function") {
+          await onSuccess();
+        }
+      })
+      .catch(() => {});
   };
 
   const handleDragOver = (e) => {
@@ -43,6 +145,15 @@ export default function AddMaintainerModal({ open, onOpenChange }) {
   const handleDrop = (e) => {
     e.preventDefault();
     setIsDragging(false);
+    const droppedFile = e.dataTransfer.files?.[0];
+    if (droppedFile) {
+      setAvatar(droppedFile);
+    }
+  };
+
+  const handleFileChange = (e) => {
+    const selectedFile = e.target.files?.[0] || null;
+    setAvatar(selectedFile);
   };
 
   return (
@@ -69,13 +180,22 @@ export default function AddMaintainerModal({ open, onOpenChange }) {
           <div className="flex gap-4">
             <div className="shrink-0">
               <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-gray-300">
-                <svg
-                  className="h-12 w-12 text-gray-500"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-                </svg>
+                {avatarPreview ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={avatarPreview}
+                    alt="Selected avatar preview"
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <svg
+                    className="h-12 w-12 text-gray-500"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                  </svg>
+                )}
               </div>
             </div>
 
@@ -89,7 +209,11 @@ export default function AddMaintainerModal({ open, onOpenChange }) {
             >
               <Upload className="mx-auto mb-2 h-5 w-5 text-gray-400" />
               <div className="text-sm">
-                <button className="text-blue-500 hover:underline">
+                <button
+                  type="button"
+                  className="text-blue-500 hover:underline"
+                  onClick={() => fileInputRef.current?.click()}
+                >
                   Click to upload
                 </button>
                 <span className="text-gray-500"> or drag and drop</span>
@@ -97,6 +221,16 @@ export default function AddMaintainerModal({ open, onOpenChange }) {
               <p className="mt-1 text-xs text-gray-400">
                 PNG or JPG (max. 800x800px)
               </p>
+              {avatar ? (
+                <p className="mt-2 text-xs text-gray-600">{avatar.name}</p>
+              ) : null}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/jpg"
+                className="hidden"
+                onChange={handleFileChange}
+              />
             </div>
           </div>
 
@@ -128,22 +262,33 @@ export default function AddMaintainerModal({ open, onOpenChange }) {
             <Label className="text-sm font-medium">Role</Label>
             <Select value={role} onValueChange={setRole}>
               <SelectTrigger>
-                <SelectValue />
+                <SelectValue
+                  placeholder={
+                    status === "loading" ? "Loading roles..." : "Select role"
+                  }
+                />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Sales & Marketing">Sales & Marketing</SelectItem>
-                <SelectItem value="Customer Support">Customer Support</SelectItem>
-                <SelectItem value="Operations">Operations</SelectItem>
-                <SelectItem value="Administrator">Administrator</SelectItem>
+                {allowedRoles.map((roleOption) => (
+                  <SelectItem key={roleOption.id} value={roleOption.id}>
+                    {roleOption.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
+            {error ? <p className="text-xs text-red-500">{error}</p> : null}
+            {!error && !allowedRoles.length ? (
+              <p className="text-xs text-amber-600">
+                You do not have permission to assign any maintainer role.
+              </p>
+            ) : null}
           </div>
 
           <div className="space-y-2">
             <Label className="text-sm font-medium">Permission</Label>
             <div className="flex items-center gap-2 text-sm">
               <Check className="h-4 w-4 text-gray-600" />
-              <span>Overview, Rewards, Gifts & Coupons</span>
+              <span>{permissionText}</span>
             </div>
           </div>
 
@@ -153,18 +298,28 @@ export default function AddMaintainerModal({ open, onOpenChange }) {
               permissions carefully before saving.
             </p>
           </div>
+          {createError ? (
+            <p className="text-sm text-red-500">{createError}</p>
+          ) : null}
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-0">
+        <DialogFooter className="gap-3 sm:gap-3">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
           <Button
             className="bg-blue-500 text-white hover:bg-blue-600"
             onClick={handleSave}
+            disabled={
+              createStatus === "loading" ||
+              !name.trim() ||
+              !email.trim() ||
+              !role ||
+              !allowedRoles.length
+            }
           >
             <Check className="mr-1 h-4 w-4" />
-            Save
+            {createStatus === "loading" ? "Saving..." : "Save"}
           </Button>
         </DialogFooter>
       </DialogContent>

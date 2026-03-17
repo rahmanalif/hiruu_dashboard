@@ -163,7 +163,7 @@ export default function EditRoleModal({
                     </div>
                 </div>
 
-                <DialogFooter className="gap-4 sm:gap-0">
+                <DialogFooter className="gap-4 sm:gap-2">
                     <Button variant="outline" onClick={() => onOpenChange(false)}>
                         Cancel
                     </Button>
