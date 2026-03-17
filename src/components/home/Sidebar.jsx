@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useDispatch, useSelector } from 'react-redux';
 import { LogOut } from 'lucide-react';
 import { logoutUser } from '@/store/authSlice';
-import { hasPermissionAccess, resolveUserPermissions } from '@/lib/permissions';
+import { hasPermissionAccess, isAdminUser, resolveUserPermissions } from '@/lib/permissions';
 
 const Sidebar = () => {
   const dispatch = useDispatch();
@@ -14,6 +14,7 @@ const Sidebar = () => {
   const pathname = usePathname();
   const authStatus = useSelector((state) => state.auth.status);
   const currentUser = useSelector((state) => state.auth.user);
+  const isAdmin = useMemo(() => isAdminUser(currentUser), [currentUser]);
   const userPermissions = useMemo(
     () => resolveUserPermissions(currentUser),
     [currentUser]
@@ -125,7 +126,7 @@ const Sidebar = () => {
   ];
 
   const visibleMenuItems = menuItems.filter((item) =>
-    hasPermissionAccess(userPermissions, item.requiredPermissions)
+    isAdmin || hasPermissionAccess(userPermissions, item.requiredPermissions)
   );
 
   return (

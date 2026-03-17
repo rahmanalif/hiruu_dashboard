@@ -1,52 +1,84 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Filter, TrendingUp, TrendingDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Search, TrendingUp, TrendingDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import CouponWizardModal from '@/components/modals/AddNewOfferModal';
 import ViewCouponModal from '@/components/modals/ViewCoupon';
+import { fetchCoupons } from '@/store/couponsSlice';
+
+const formatDiscount = (coupon) =>
+  coupon?.discountType === 'percent'
+    ? `${coupon.discount}%`
+    : `${coupon.discount} (Fixed)`;
+
+const formatExpiry = (value) =>
+  value
+    ? new Date(value).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      })
+    : 'No expiry';
+
+const normalizeCoupon = (coupon) => ({
+  id: coupon.id,
+  campaign: coupon.name || 'N/A',
+  code: coupon.code || 'N/A',
+  discount: formatDiscount(coupon),
+  rawDiscount: coupon.discount,
+  discountType: coupon.discountType || 'percent',
+  uses: coupon.limit == null ? 'Unlimited' : String(coupon.limit),
+  target: coupon.target || 'All',
+  expiry: formatExpiry(coupon.expiredAt),
+  expiredAt: coupon.expiredAt || null,
+  isActive: Boolean(coupon.isActive),
+  status: coupon.isActive ? 'Active' : 'Inactive',
+});
 
 const GiftsCouponsTable = () => {
+  const dispatch = useDispatch();
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddOfferModalOpen, setIsAddOfferModalOpen] = useState(false);
   const [isViewCouponModalOpen, setIsViewCouponModalOpen] = useState(false);
   const [selectedCoupon, setSelectedCoupon] = useState(null);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState('All');
+  const [currentPage, setCurrentPage] = useState(1);
+  const { coupons, pagination, status, error } = useSelector((state) => state.coupons);
 
   const filterOptions = ['Active', 'Inactive'];
 
   const stats = [
     { label: 'Total Redemptions', value: '19990', change: '+11.01%', trending: 'up' },
     { label: 'Total Revenue', value: '$50,550', change: '+15.03%', trending: 'up' },
-    { label: 'Conversion Rate', value: '61%', change: '-0.03%', trending: 'down' },
+    // { label: 'Conversion Rate', value: '61%', change: '-0.03%', trending: 'down' },
     { label: 'User Engagement', value: '3,625', change: '+15.03%', trending: 'up' }
   ];
 
-  const coupons = [
-    { campaign: 'Winter', code: 'ADFIB2025', discount: '50%', uses: 'Unlimited', target: 'User', expiry: 'Aug 5, 2023', status: 'Active' },
-    { campaign: 'Winter', code: 'BD2053', discount: '30%', uses: 'Unlimited', target: 'User', expiry: 'Aug 5, 2023', status: 'Active' },
-    { campaign: 'Summer Campaign', code: 'ADFIB2025', discount: '30%', uses: '1000', target: 'User', expiry: 'Aug 5, 2023', status: 'Active' },
-    { campaign: 'Eid Offer', code: 'ADFIB2025', discount: '1000 (Fixed)', uses: 'Unlimited', target: 'User', expiry: 'Aug 5, 2023', status: 'Active' },
-    { campaign: 'Eid Offer', code: 'ADFIB2025', discount: '1000 (Fixed)', uses: 'Unlimited', target: 'User', expiry: 'Aug 5, 2023', status: 'Active' },
-    { campaign: 'Eid Offer', code: 'ADFIB2025', discount: '1000 (Fixed)', uses: 'Unlimited', target: 'User', expiry: 'Aug 5, 2023', status: 'Active' },
-    { campaign: 'Winter', code: 'ADFIB2025', discount: '20%', uses: '1000', target: 'User', expiry: 'Aug 5, 2023', status: 'Inactive' },
-    { campaign: 'Winter', code: 'ADFIB2025', discount: '20%', uses: '1000', target: 'User', expiry: 'Aug 5, 2023', status: 'Inactive' },
-    { campaign: 'Summer Campaign', code: 'ADFIB2025', discount: '30%', uses: '1000', target: 'Business', expiry: 'Aug 5, 2023', status: 'Inactive' },
-    { campaign: 'Eid Offer', code: 'ADFIB2025', discount: '500 (Fixed)', uses: '2000', target: 'All', expiry: 'Aug 5, 2023', status: 'Inactive' },
-    { campaign: 'Summer Campaign', code: 'BD2053', discount: '10%', uses: '1000', target: 'Business', expiry: 'Aug 5, 2023', status: 'Inactive' },
-    { campaign: 'Winter', code: 'BD2053', discount: '205', uses: '2000', target: 'Business', expiry: 'Aug 5, 2023', status: 'Inactive' },
-    { campaign: 'Winter', code: 'BD2053', discount: '10%', uses: '2000', target: 'Business', expiry: 'Aug 5, 2023', status: 'Inactive' },
-    { campaign: 'Summer Campaign', code: 'BD2053', discount: '30%', uses: '2000', target: 'All', expiry: 'Aug 5, 2023', status: 'Inactive' },
-    { campaign: 'Winter', code: 'BD2053', discount: '10%', uses: '2000', target: 'Business', expiry: 'Aug 5, 2023', status: 'Inactive' },
-    { campaign: 'Summer Campaign', code: 'BD2053', discount: '30%', uses: '2000', target: 'All', expiry: 'Aug 5, 2023', status: 'Inactive' },
-    { campaign: 'Winter', code: 'BD2053', discount: '10%', uses: '2000', target: 'Business', expiry: 'Aug 5, 2023', status: 'Inactive' },
-    { campaign: 'Summer Campaign', code: 'BD2053', discount: '30%', uses: '2000', target: 'All', expiry: 'Aug 5, 2023', status: 'Inactive' }
-  ];
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      dispatch(
+        fetchCoupons({
+          page: currentPage,
+          limit: 10,
+          search: searchTerm.trim(),
+        })
+      );
+    }, 300);
 
-  const filteredCoupons = coupons.filter(coupon => {
+    return () => clearTimeout(timeoutId);
+  }, [currentPage, dispatch, searchTerm]);
+
+  const normalizedCoupons = useMemo(
+    () => coupons.map((coupon) => normalizeCoupon(coupon)),
+    [coupons]
+  );
+
+  const filteredCoupons = normalizedCoupons.filter(coupon => {
     if (selectedStatus === 'All') return true;
     return coupon.status === selectedStatus;
   });
@@ -101,7 +133,10 @@ const GiftsCouponsTable = () => {
                     type="text"
                     placeholder="Search"
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={(e) => {
+                      setCurrentPage(1);
+                      setSearchTerm(e.target.value);
+                    }}
                     className="pl-10 w-64 h-9"
                   />
                 </div>
@@ -159,37 +194,57 @@ const GiftsCouponsTable = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredCoupons.map((coupon, index) => (
-                    <tr key={index} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{coupon.campaign}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{coupon.code}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{coupon.discount}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{coupon.uses}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{coupon.target}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{coupon.expiry}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <Badge
-                          variant={coupon.status === 'Active' ? 'default' : 'secondary'}
-                          className={coupon.status === 'Active' ? 'bg-green-100 text-green-800 hover:bg-green-100' : 'bg-gray-100 text-gray-800 hover:bg-gray-100'}
-                        >
-                          {coupon.status}
-                        </Badge>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-blue-600 border-blue-600 hover:bg-blue-50"
-                          onClick={() => {
-                            setSelectedCoupon(coupon);
-                            setIsViewCouponModalOpen(true);
-                          }}
-                        >
-                          View
-                        </Button>
+                  {status === 'loading' ? (
+                    <tr>
+                      <td colSpan={8} className="px-6 py-8 text-center text-sm text-gray-500">
+                        Loading coupons...
                       </td>
                     </tr>
-                  ))}
+                  ) : error ? (
+                    <tr>
+                      <td colSpan={8} className="px-6 py-8 text-center text-sm text-red-500">
+                        {error}
+                      </td>
+                    </tr>
+                  ) : filteredCoupons.length ? (
+                    filteredCoupons.map((coupon) => (
+                      <tr key={coupon.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{coupon.campaign}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{coupon.code}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{coupon.discount}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{coupon.uses}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{coupon.target}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{coupon.expiry}</td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <Badge
+                            variant={coupon.status === 'Active' ? 'default' : 'secondary'}
+                            className={coupon.status === 'Active' ? 'bg-green-100 text-green-800 hover:bg-green-100' : 'bg-gray-100 text-gray-800 hover:bg-gray-100'}
+                          >
+                            {coupon.status}
+                          </Badge>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-blue-600 border-blue-600 hover:bg-blue-50"
+                            onClick={() => {
+                              setSelectedCoupon(coupon);
+                              setIsViewCouponModalOpen(true);
+                            }}
+                          >
+                            Edit
+                          </Button>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={8} className="px-6 py-8 text-center text-sm text-gray-500">
+                        No coupons found.
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -197,13 +252,25 @@ const GiftsCouponsTable = () => {
             {/* Pagination */}
             <div className="flex items-center justify-between px-6 py-4 border-t">
               <div className="text-sm text-gray-600">
-                Total Offer: 55 & Pages: 1/5
+                Total Offer: {pagination?.total || 0} & Pages: {pagination?.page || currentPage}/{pagination?.totalPages || 1}
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" className="h-8 w-8 p-0">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1 || status === 'loading'}
+                >
                   <ChevronLeft className="w-4 h-4" />
                 </Button>
-                <Button variant="outline" size="sm" className="h-8 w-8 p-0">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  onClick={() => setCurrentPage(Math.min(pagination?.totalPages || 1, currentPage + 1))}
+                  disabled={currentPage === (pagination?.totalPages || 1) || status === 'loading'}
+                >
                   <ChevronRight className="w-4 h-4" />
                 </Button>
               </div>
@@ -215,18 +282,41 @@ const GiftsCouponsTable = () => {
       <CouponWizardModal
         open={isAddOfferModalOpen}
         onOpenChange={setIsAddOfferModalOpen}
+        onSuccess={() => {
+          dispatch(
+            fetchCoupons({
+              page: currentPage,
+              limit: 10,
+              search: searchTerm.trim(),
+            })
+          );
+        }}
       />
 
       <ViewCouponModal
+        key={selectedCoupon?.id || 'coupon-modal'}
         open={isViewCouponModalOpen}
         onOpenChange={setIsViewCouponModalOpen}
+        onSuccess={() => {
+          dispatch(
+            fetchCoupons({
+              page: currentPage,
+              limit: 10,
+              search: searchTerm.trim(),
+            })
+          );
+        }}
         couponData={selectedCoupon ? {
+          id: selectedCoupon.id,
           campaignName: selectedCoupon.campaign,
           couponName: selectedCoupon.code,
-          discount: selectedCoupon.discount,
+          discount: selectedCoupon.rawDiscount,
+          discountType: selectedCoupon.discountType,
           usage: selectedCoupon.uses,
+          isActive: selectedCoupon.isActive,
           targetAudience: selectedCoupon.target,
-          expiry: selectedCoupon.expiry
+          expiry: selectedCoupon.expiry,
+          expiredAt: selectedCoupon.expiredAt,
         } : undefined}
       />
     </div>

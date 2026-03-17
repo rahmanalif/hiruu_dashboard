@@ -1,6 +1,33 @@
+export const isAdminUser = (user) => {
+  if (!user || typeof user !== "object") {
+    return false;
+  }
+
+  const candidateRoles = [
+    user.role,
+    user.userType,
+    user.type,
+    user.accountType,
+    user.data?.role,
+    user.data?.userType,
+    user.maintainer?.role,
+    user.maintainer?.user?.role,
+  ];
+
+  return candidateRoles.some(
+    (candidateRole) =>
+      typeof candidateRole === "string" &&
+      candidateRole.trim().toLowerCase() === "admin"
+  );
+};
+
 export const resolveUserPermissions = (user) => {
   if (!user || typeof user !== "object") {
     return {};
+  }
+
+  if (isAdminUser(user)) {
+    return { "*": 999 };
   }
 
   const candidates = [
@@ -36,6 +63,10 @@ export const hasPermissionAccess = (
   requiredPermissions,
   minimumLevel = 1
 ) => {
+  if (Number(userPermissions?.["*"] || 0) >= minimumLevel) {
+    return true;
+  }
+
   if (!requiredPermissions) {
     return true;
   }
@@ -50,6 +81,10 @@ export const hasPermissionAccess = (
 };
 
 export const canAssignRole = (userPermissions, rolePermissions) => {
+  if (Number(userPermissions?.["*"] || 0) > 0) {
+    return true;
+  }
+
   if (!rolePermissions || typeof rolePermissions !== "object") {
     return true;
   }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import {
     Dialog,
     DialogContent,
@@ -12,20 +13,20 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Gift, Search } from "lucide-react";
+import { Gift } from "lucide-react";
+import { createCoupon, resetCreateCouponState } from "@/store/couponsSlice";
+
+const generateCouponCode = () =>
+    `OFFER${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 
 export default function CouponWizardModal({
     open,
     onOpenChange,
+    onSuccess,
 }) {
+    const dispatch = useDispatch();
+    const { createStatus, createError } = useSelector((state) => state.coupons);
     const [currentStep, setCurrentStep] = useState(1);
     const [campaignName, setCampaignName] = useState("Summer Sale");
     const [couponType, setCouponType] = useState("custom");
@@ -38,18 +39,30 @@ export default function CouponWizardModal({
     const [usageLimit, setUsageLimit] = useState("max");
     const [maxUses, setMaxUses] = useState("1000");
 
-    // Step 2 - Audience Targeting
-    const [targetUsers, setTargetUsers] = useState(false);
-    const [userFilter, setUserFilter] = useState("All");
-    const [targetBusinesses, setTargetBusinesses] = useState(false);
-    const [businessFilter, setBusinessFilter] = useState("All");
-    const [selectedUsersMode, setSelectedUsersMode] = useState(false);
-    const [selectedBusinessesMode, setSelectedBusinessesMode] = useState(false);
-    const [userSearch, setUserSearch] = useState("");
-    const [businessSearch, setBusinessSearch] = useState("");
+    const resetForm = () => {
+        setCurrentStep(1);
+        setCampaignName("Summer Sale");
+        setCouponType("custom");
+        setCouponCode("SUMMER20");
+        setDiscountType("percentage");
+        setDiscountValue("20");
+        setFixedAmount("10");
+        setExpiryDate("");
+        setNoExpiry(false);
+        setUsageLimit("max");
+        setMaxUses("1000");
+    };
+
+    const handleOpenChange = (nextOpen) => {
+        if (!nextOpen) {
+            dispatch(resetCreateCouponState());
+            resetForm();
+        }
+        onOpenChange(nextOpen);
+    };
 
     const handleNext = () => {
-        if (currentStep < 3) {
+        if (currentStep < 2) {
             setCurrentStep(currentStep + 1);
         }
     };
@@ -60,9 +73,49 @@ export default function CouponWizardModal({
         }
     };
 
-    const handlePublish = () => {
-        console.log("Publishing coupon...");
-        onOpenChange(false);
+    const handlePublish = async () => {
+        const activeCouponCode =
+            couponType === "auto" ? couponCode || generateCouponCode() : couponCode.trim();
+        const payload = {
+            name: campaignName.trim(),
+            code: activeCouponCode,
+            discount: Number(discountType === "percentage" ? discountValue : fixedAmount),
+            discountType: discountType === "percentage" ? "percent" : "amount",
+            isActive: true,
+            limit: usageLimit === "unlimited" ? null : Number(maxUses),
+            expiredAt: noExpiry || !expiryDate ? null : new Date(expiryDate).toISOString(),
+        };
+
+        const resultAction = await dispatch(createCoupon(payload));
+
+        if (createCoupon.fulfilled.match(resultAction)) {
+            const createdCoupon = resultAction.payload;
+            if (onSuccess) {
+                onSuccess({
+                    id: createdCoupon?.id || activeCouponCode,
+                    campaign: createdCoupon?.name || payload.name,
+                    code: createdCoupon?.code || payload.code,
+                    discount:
+                        payload.discountType === "percent"
+                            ? `${payload.discount}%`
+                            : `${payload.discount} (Fixed)`,
+                    uses: payload.limit == null ? "Unlimited" : String(payload.limit),
+                    target: "All",
+                    expiry: payload.expiredAt
+                        ? new Date(payload.expiredAt).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                          })
+                        : "No expiry",
+                    status: payload.isActive ? "Active" : "Inactive",
+                });
+            }
+
+            dispatch(resetCreateCouponState());
+            resetForm();
+            handleOpenChange(false);
+        }
     };
 
     const getStepTitle = () => {
@@ -70,8 +123,6 @@ export default function CouponWizardModal({
             case 1:
                 return "Basic Settings";
             case 2:
-                return "Audience Targeting";
-            case 3:
                 return "Review & Deploy";
             default:
                 return "";
@@ -79,7 +130,7 @@ export default function CouponWizardModal({
     };
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
+        <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" showCloseButton={false}>
                 <DialogHeader>
                     <div className="flex items-center justify-between mb-2">
@@ -111,7 +162,12 @@ export default function CouponWizardModal({
                                 <Label className="text-sm">Coupon Code</Label>
                                 <RadioGroup
                                     value={couponType}
-                                    onValueChange={(value) => setCouponType(value)}
+                                    onValueChange={(value) => {
+                                        setCouponType(value);
+                                        if (value === "auto") {
+                                            setCouponCode(generateCouponCode());
+                                        }
+                                    }}
                                 >
                                     <div className="flex items-center space-x-2">
                                         <RadioGroupItem value="auto" id="auto" />
@@ -174,10 +230,10 @@ export default function CouponWizardModal({
                             <div className="space-y-3">
                                 <Label className="text-sm">Expiry</Label>
                                 <Input
-                                    type="text"
-                                    placeholder="mm/dd/yyyy"
+                                    type="date"
                                     value={expiryDate}
                                     onChange={(e) => setExpiryDate(e.target.value)}
+                                    disabled={noExpiry}
                                 />
                                 <div className="flex items-center space-x-2">
                                     <Checkbox
@@ -224,157 +280,8 @@ export default function CouponWizardModal({
                         </div>
                     )}
 
-                    {/* Step 2: Audience Targeting */}
+                    {/* Step 2: Review & Deploy */}
                     {currentStep === 2 && (
-                        <div className="space-y-6">
-                            <Label className="text-sm">Select Target Audience</Label>
-
-                            {/* Users Section */}
-                            <div className="space-y-3">
-                                <div className="flex items-center space-x-2">
-                                    <input
-                                        type="radio"
-                                        id="users"
-                                        checked={targetUsers && !selectedUsersMode}
-                                        onChange={() => {
-                                            setTargetUsers(true);
-                                            setSelectedUsersMode(false);
-                                            setTargetBusinesses(false);
-                                            setSelectedBusinessesMode(false);
-                                        }}
-                                        className="h-4 w-4"
-                                    />
-                                    <Label htmlFor="users" className="font-normal cursor-pointer">
-                                        Users
-                                    </Label>
-                                </div>
-                                {targetUsers && !selectedUsersMode && (
-                                    <div className="ml-6">
-                                        <Select value={userFilter} onValueChange={setUserFilter}>
-                                            <SelectTrigger>
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="All">All</SelectItem>
-                                                <SelectItem value="Free">Free</SelectItem>
-                                                <SelectItem value="Premium">Premium</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Businesses Section */}
-                            <div className="space-y-3">
-                                <div className="flex items-center space-x-2">
-                                    <input
-                                        type="radio"
-                                        id="businesses"
-                                        checked={targetBusinesses && !selectedBusinessesMode}
-                                        onChange={() => {
-                                            setTargetBusinesses(true);
-                                            setSelectedBusinessesMode(false);
-                                            setTargetUsers(false);
-                                            setSelectedUsersMode(false);
-                                        }}
-                                        className="h-4 w-4"
-                                    />
-                                    <Label htmlFor="businesses" className="font-normal cursor-pointer">
-                                        Businesses
-                                    </Label>
-                                </div>
-                                {targetBusinesses && !selectedBusinessesMode && (
-                                    <div className="ml-6">
-                                        <Select value={businessFilter} onValueChange={setBusinessFilter}>
-                                            <SelectTrigger>
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="All">All</SelectItem>
-                                                <SelectItem value="Free">Free</SelectItem>
-                                                <SelectItem value="Premium">Premium</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Selected Users Section */}
-                            <div className="space-y-3">
-                                <div className="flex items-center space-x-2">
-                                    <input
-                                        type="radio"
-                                        id="selected-users"
-                                        checked={selectedUsersMode}
-                                        onChange={() => {
-                                            setSelectedUsersMode(true);
-                                            setTargetUsers(false);
-                                            setTargetBusinesses(false);
-                                            setSelectedBusinessesMode(false);
-                                        }}
-                                        className="h-4 w-4"
-                                    />
-                                    <Label htmlFor="selected-users" className="font-normal cursor-pointer">
-                                        Users
-                                    </Label>
-                                </div>
-                                {selectedUsersMode && (
-                                    <div className="ml-6 space-y-2">
-                                        <div className="text-xs text-gray-500">
-                                            ID: 19205, 19206, 19266
-                                        </div>
-                                        <div className="relative">
-                                            <Input
-                                                placeholder="Select users"
-                                                value={userSearch}
-                                                onChange={(e) => setUserSearch(e.target.value)}
-                                            />
-                                            <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Selected Businesses Section */}
-                            <div className="space-y-3">
-                                <div className="flex items-center space-x-2">
-                                    <input
-                                        type="radio"
-                                        id="selected-businesses"
-                                        checked={selectedBusinessesMode}
-                                        onChange={() => {
-                                            setSelectedBusinessesMode(true);
-                                            setTargetBusinesses(false);
-                                            setTargetUsers(false);
-                                            setSelectedUsersMode(false);
-                                        }}
-                                        className="h-4 w-4"
-                                    />
-                                    <Label htmlFor="selected-businesses" className="font-normal cursor-pointer">
-                                        Businesses
-                                    </Label>
-                                </div>
-                                {selectedBusinessesMode && (
-                                    <div className="ml-6 space-y-2">
-                                        <div className="text-xs text-gray-500">
-                                            ID: 19205, 19206, 19266
-                                        </div>
-                                        <div className="relative">
-                                            <Input
-                                                placeholder="Select business"
-                                                value={businessSearch}
-                                                onChange={(e) => setBusinessSearch(e.target.value)}
-                                            />
-                                            <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Step 3: Review & Deploy */}
-                    {currentStep === 3 && (
                         <div className="space-y-6">
                             <div className="space-y-4">
                                 <h3 className="font-semibold">Campaign Summary</h3>
@@ -421,24 +328,32 @@ export default function CouponWizardModal({
                     )}
                 </div>
 
+                {createError ? (
+                    <p className="text-sm text-red-500">{createError}</p>
+                ) : null}
+
                 <DialogFooter className="gap-2 sm:gap-0">
                     {currentStep > 1 && (
-                        <Button variant="outline" onClick={handlePrevious}>
+                        <Button variant="outline" onClick={handlePrevious} disabled={createStatus === "loading"}>
                             Previous
                         </Button>
                     )}
                     {currentStep === 1 && (
-                        <Button variant="outline" onClick={() => onOpenChange(false)}>
+                        <Button variant="outline" onClick={() => handleOpenChange(false)} disabled={createStatus === "loading"}>
                             Cancel
                         </Button>
                     )}
-                    {currentStep < 3 ? (
+                    {currentStep < 2 ? (
                         <Button className="bg-blue-500 hover:bg-blue-600" onClick={handleNext}>
                             Next
                         </Button>
                     ) : (
-                        <Button className="bg-blue-500 hover:bg-blue-600" onClick={handlePublish}>
-                            Publish
+                        <Button
+                            className="bg-blue-500 hover:bg-blue-600"
+                            onClick={handlePublish}
+                            disabled={createStatus === "loading"}
+                        >
+                            {createStatus === "loading" ? "Publishing..." : "Publish"}
                         </Button>
                     )}
                 </DialogFooter>

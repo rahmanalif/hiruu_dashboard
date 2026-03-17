@@ -91,6 +91,30 @@ const resolveAvatarUrl = (avatarPath) => {
   }
 };
 
+const truncateValue = (value, start = 8, end = 4) => {
+  if (!value) {
+    return "N/A";
+  }
+
+  if (value.length <= start + end + 3) {
+    return value;
+  }
+
+  return `${value.slice(0, start)}...${value.slice(-end)}`;
+};
+
+const truncateAccess = (value, maxLength = 72) => {
+  if (!value) {
+    return "N/A";
+  }
+
+  if (value.length <= maxLength) {
+    return value;
+  }
+
+  return `${value.slice(0, maxLength)}...`;
+};
+
 const RoleManagement = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -100,6 +124,8 @@ const RoleManagement = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedMaintainer, setSelectedMaintainer] = useState(null);
+  const [openEmployeeId, setOpenEmployeeId] = useState(null);
+  const [openAccessId, setOpenAccessId] = useState(null);
 
   const fetchMaintainers = async () => {
     const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
@@ -231,7 +257,8 @@ const RoleManagement = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  {/* <TableHead>Employee ID</TableHead> */}
+                  <TableHead>Employee ID</TableHead>
+                  <TableHead>Avatar</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Access</TableHead>
@@ -242,32 +269,75 @@ const RoleManagement = () => {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-gray-500">
+                    <TableCell colSpan={7} className="text-center text-gray-500">
                       Loading maintainers...
                     </TableCell>
                   </TableRow>
                 ) : error ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-red-500">
+                    <TableCell colSpan={7} className="text-center text-red-500">
                       {error}
                     </TableCell>
                   </TableRow>
                 ) : filteredRoleData.length ? (
                   filteredRoleData.map((employee) => (
                     <TableRow key={employee.id}>
-                      <TableCell className="text-gray-900">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-blue-100 text-xs font-semibold text-blue-700">
-                            <EmployeeAvatar
-                              src={employee.avatar}
-                              name={employee.name}
-                            />
-                          </div>
-                          <span>{employee.name}</span>
+                      <TableCell className="font-medium text-gray-900">
+                        <div className="relative inline-block">
+                          <button
+                            type="button"
+                            className="text-left font-medium text-gray-900 hover:text-blue-600"
+                            onClick={() =>
+                              setOpenEmployeeId((currentId) =>
+                                currentId === employee.id ? null : employee.id
+                              )
+                            }
+                          >
+                            {truncateValue(employee.id)}
+                          </button>
+                          {openEmployeeId === employee.id ? (
+                            <div className="absolute left-0 top-full z-20 mt-2 w-72 rounded-lg border border-gray-200 bg-white p-3 text-left shadow-lg">
+                              <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-500">
+                                Full Employee ID
+                              </p>
+                              <p className="break-all text-sm text-gray-900">{employee.id}</p>
+                            </div>
+                          ) : null}
                         </div>
                       </TableCell>
+                      <TableCell className="text-gray-900">
+                        <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-blue-100 text-xs font-semibold text-blue-700">
+                          <EmployeeAvatar
+                            src={employee.avatar}
+                            name={employee.name}
+                          />
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-gray-900">{employee.name}</TableCell>
                       <TableCell className="text-gray-600">{employee.email}</TableCell>
-                      <TableCell className="text-gray-900">{employee.access}</TableCell>
+                      <TableCell className="text-gray-900">
+                        <div className="relative inline-block max-w-[420px]">
+                          <button
+                            type="button"
+                            className="text-left text-gray-900 hover:text-blue-600"
+                            onClick={() =>
+                              setOpenAccessId((currentId) =>
+                                currentId === employee.id ? null : employee.id
+                              )
+                            }
+                          >
+                            {truncateAccess(employee.access)}
+                          </button>
+                          {openAccessId === employee.id ? (
+                            <div className="absolute left-0 top-full z-20 mt-2 w-[28rem] rounded-lg border border-gray-200 bg-white p-3 text-left shadow-lg">
+                              <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-500">
+                                Full Access
+                              </p>
+                              <p className="break-words text-sm text-gray-900">{employee.access}</p>
+                            </div>
+                          ) : null}
+                        </div>
+                      </TableCell>
                       <TableCell className="text-gray-900">{employee.role}</TableCell>
                       <TableCell className="text-right">
                         <Button
@@ -286,7 +356,7 @@ const RoleManagement = () => {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-gray-500">
+                    <TableCell colSpan={7} className="text-center text-gray-500">
                       No maintainers found.
                     </TableCell>
                   </TableRow>
