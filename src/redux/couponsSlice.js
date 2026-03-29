@@ -4,6 +4,7 @@ import { readStoredAuth, resolveAccessToken } from "@/lib/auth";
 const initialState = {
   coupons: [],
   pagination: null,
+  metadata: null,
   status: "idle",
   error: null,
   createdCoupons: [],
@@ -114,6 +115,7 @@ export const fetchCoupons = createAsyncThunk(
     return {
       coupons: Array.isArray(payload?.data) ? payload.data : [],
       pagination: payload?.pagination || null,
+      metadata: payload?.metadata || null,
     };
   }
 );
@@ -187,6 +189,7 @@ const couponsSlice = createSlice({
         state.status = "succeeded";
         state.coupons = action.payload.coupons;
         state.pagination = action.payload.pagination;
+        state.metadata = action.payload.metadata;
       })
       .addCase(fetchCoupons.rejected, (state, action) => {
         state.status = "failed";

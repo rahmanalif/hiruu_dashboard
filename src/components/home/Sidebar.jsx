@@ -1,11 +1,10 @@
 "use client";
 import React, { useMemo } from 'react';
-import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useDispatch, useSelector } from 'react-redux';
 import { LogOut } from 'lucide-react';
-import { logoutUser } from '@/store/authSlice';
+import { logoutUser } from '@/redux/authSlice';
 import { hasPermissionAccess, isAdminUser, resolveUserPermissions } from '@/lib/permissions';
 
 const Sidebar = () => {
@@ -19,6 +18,9 @@ const Sidebar = () => {
     () => resolveUserPermissions(currentUser),
     [currentUser]
   );
+  const userInitial = currentUser?.name?.[0]?.toUpperCase() || 'A';
+  const roleLabel = isAdmin ? 'Super Admin' : 'Maintainer';
+  const accessLabel = isAdmin ? 'Full access' : 'Scoped access';
 
   const getLinkClassName = (path) => {
     const isActive = pathname === path;
@@ -144,7 +146,7 @@ const Sidebar = () => {
         ))}
       </nav>
 
-      <div className="p-4 border-t border-gray-200">
+      <div className="border-t border-gray-200 p-4">
         <button
           type="button"
           onClick={async () => {
@@ -154,30 +156,41 @@ const Sidebar = () => {
             }
           }}
           disabled={authStatus === "loading"}
-          className="w-full flex items-center justify-between p-3 bg-gray-50 rounded-lg text-left cursor-pointer disabled:opacity-60"
+          className="w-full rounded-2xl border border-slate-200 bg-slate-50/70 p-4 text-left transition-colors duration-200 hover:border-slate-300 hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
         >
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
-              {currentUser?.name?.[0]?.toUpperCase() || 'A'}
+          <div className="flex flex-col gap-4">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-sm font-semibold text-white">
+                <span>{userInitial}</span>
+                <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-slate-50 bg-emerald-400" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold leading-5 text-slate-900">
+                  {currentUser?.name || 'Admin User'}
+                </p>
+                <p className="mt-0.5 truncate text-xs text-slate-500">
+                  {currentUser?.email || 'admin@hirvu.com'}
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-medium text-gray-900">
-                {currentUser?.name || 'Admin User'}
-              </p>
-              <p className="text-xs text-gray-500">
-                {currentUser?.email || 'admin@hirvu.com'}
-              </p>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.14em] text-slate-700">
+                    {roleLabel}
+              </span>
+              <span className="text-[11px] text-slate-500">
+                {accessLabel}
+              </span>
             </div>
-          </div>
-          <div className="flex items-center gap-2 text-gray-500">
-            <span className="text-xs font-medium">Logout</span>
-            <LogOut className="w-4 h-4 text-gray-400" />
+
+            <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-600">
+              <span className="text-xs font-medium">
+                {authStatus === 'loading' ? 'Logging out...' : 'Logout'}
+              </span>
+              <LogOut className="h-4 w-4 shrink-0" />
+            </div>
           </div>
         </button>
-        <div className="mt-2 text-center">
-          <Badge variant="secondary" className="text-xs">Super Admin</Badge>
-          <p className="text-xs text-gray-500 mt-1">Full access</p>
-        </div>
       </div>
     </div>
   );

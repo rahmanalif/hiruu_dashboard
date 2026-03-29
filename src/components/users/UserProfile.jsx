@@ -16,6 +16,7 @@ export default function UserProfileActivity() {
     const [activeTab, setActiveTab] = useState('all');
     const [mainTab, setMainTab] = useState('account');
     const [isBanModalOpen, setIsBanModalOpen] = useState(false);
+    const [isUserIdOpen, setIsUserIdOpen] = useState(false);
 
     const activityItems = [
         {
@@ -237,7 +238,28 @@ export default function UserProfileActivity() {
                             </div>
                             <div className="grid grid-cols-3 gap-2">
                                 <span className="font-medium text-gray-600">ID:</span>
-                                <span className="col-span-2 text-gray-900">15265</span>
+                                <div className="col-span-2 relative">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsUserIdOpen((current) => !current)}
+                                        className="text-gray-900 transition-colors hover:text-[#4FB2F3]"
+                                    >
+                                        15265
+                                    </button>
+                                    {isUserIdOpen && (
+                                        <>
+                                            <button
+                                                type="button"
+                                                aria-label="Close full ID popup"
+                                                onClick={() => setIsUserIdOpen(false)}
+                                                className="fixed inset-0 z-10 cursor-default"
+                                            />
+                                            <div className="absolute left-0 top-full z-20 mt-2 w-max max-w-[220px] rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-700 shadow-lg">
+                                                Full ID: 15265
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
                             </div>
                             <div className="grid grid-cols-3 gap-2">
                                 <span className="font-medium text-gray-600">Contact:</span>

@@ -11,7 +11,7 @@ import { readStoredAuth, resolveAccessToken } from '@/lib/auth';
 // Table components inline
 const Table = ({ children, className, ...props }) => (
   <div className="w-full overflow-auto">
-    <table className={cn("w-full caption-bottom text-sm", className)} {...props}>{children}</table>
+    <table className={cn("w-full table-fixed caption-bottom text-sm", className)} {...props}>{children}</table>
   </div>
 );
 const TableHeader = ({ children, className, ...props }) => <thead className={cn("border-b bg-gray-50", className)} {...props}>{children}</thead>;
@@ -196,7 +196,7 @@ const RoleManagement = () => {
       <div className="">
         <h1 className="text-2xl font-bold text-gray-900 mb-6">Role Management</h1>
 
-        <Card className="py-0">
+        <Card className="gap-0 py-0">
           <CardHeader className="border-b bg-[#ECF7FE] p-4">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg font-semibold text-gray-900">Role & Permission</CardTitle>
@@ -257,13 +257,13 @@ const RoleManagement = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Employee ID</TableHead>
-                  <TableHead>Avatar</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Access</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead className="text-right">Action</TableHead>
+                  <TableHead className="w-[170px]">Employee ID</TableHead>
+                  <TableHead className="w-[88px]">Avatar</TableHead>
+                  <TableHead className="w-[160px]">Name</TableHead>
+                  <TableHead className="w-[220px]">Email</TableHead>
+                  <TableHead className="w-[300px]">Access</TableHead>
+                  <TableHead className="w-[130px]">Role</TableHead>
+                  <TableHead className="w-[120px] text-right">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -296,12 +296,20 @@ const RoleManagement = () => {
                             {truncateValue(employee.id)}
                           </button>
                           {openEmployeeId === employee.id ? (
-                            <div className="absolute left-0 top-full z-20 mt-2 w-72 rounded-lg border border-gray-200 bg-white p-3 text-left shadow-lg">
-                              <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-500">
-                                Full Employee ID
-                              </p>
-                              <p className="break-all text-sm text-gray-900">{employee.id}</p>
-                            </div>
+                            <>
+                              <button
+                                type="button"
+                                aria-label="Close employee ID popup"
+                                onClick={() => setOpenEmployeeId(null)}
+                                className="fixed inset-0 z-10 cursor-default"
+                              />
+                              <div className="absolute left-0 top-full z-20 mt-2 w-72 rounded-lg border border-gray-200 bg-white p-3 text-left shadow-lg">
+                                <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-500">
+                                  Full Employee ID
+                                </p>
+                                <p className="break-all text-sm text-gray-900">{employee.id}</p>
+                              </div>
+                            </>
                           ) : null}
                         </div>
                       </TableCell>
@@ -313,13 +321,13 @@ const RoleManagement = () => {
                           />
                         </div>
                       </TableCell>
-                      <TableCell className="text-gray-900">{employee.name}</TableCell>
-                      <TableCell className="text-gray-600">{employee.email}</TableCell>
+                      <TableCell className="truncate text-gray-900">{employee.name}</TableCell>
+                      <TableCell className="truncate text-gray-600">{employee.email}</TableCell>
                       <TableCell className="text-gray-900">
-                        <div className="relative inline-block max-w-[420px]">
+                        <div className="relative block w-full">
                           <button
                             type="button"
-                            className="text-left text-gray-900 hover:text-blue-600"
+                            className="block w-full truncate text-left text-gray-900 hover:text-blue-600"
                             onClick={() =>
                               setOpenAccessId((currentId) =>
                                 currentId === employee.id ? null : employee.id
@@ -329,12 +337,20 @@ const RoleManagement = () => {
                             {truncateAccess(employee.access)}
                           </button>
                           {openAccessId === employee.id ? (
-                            <div className="absolute left-0 top-full z-20 mt-2 w-[28rem] rounded-lg border border-gray-200 bg-white p-3 text-left shadow-lg">
-                              <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-500">
-                                Full Access
-                              </p>
-                              <p className="break-words text-sm text-gray-900">{employee.access}</p>
-                            </div>
+                            <>
+                              <button
+                                type="button"
+                                aria-label="Close access popup"
+                                onClick={() => setOpenAccessId(null)}
+                                className="fixed inset-0 z-10 cursor-default"
+                              />
+                              <div className="absolute left-0 top-full z-20 mt-2 w-[28rem] rounded-lg border border-gray-200 bg-white p-3 text-left shadow-lg">
+                                <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-500">
+                                  Full Access
+                                </p>
+                                <p className="break-words text-sm text-gray-900">{employee.access}</p>
+                              </div>
+                            </>
                           ) : null}
                         </div>
                       </TableCell>

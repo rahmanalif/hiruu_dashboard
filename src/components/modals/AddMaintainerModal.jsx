@@ -24,7 +24,7 @@ import {
   createMaintainer,
   fetchMaintainerRoles,
   resetCreateMaintainerState,
-} from "@/store/maintainerRolesSlice";
+} from "@/redux/maintainerRolesSlice";
 import { canAssignRole, resolveUserPermissions } from "@/lib/permissions";
 
 const formatPermissionKey = (permissionKey) =>

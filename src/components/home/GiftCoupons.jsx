@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, Search, TrendingUp, TrendingDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import CouponWizardModal from '@/components/modals/AddNewOfferModal';
 import ViewCouponModal from '@/components/modals/ViewCoupon';
-import { fetchCoupons } from '@/store/couponsSlice';
+import { fetchCoupons } from '@/redux/couponsSlice';
 
 const formatDiscount = (coupon) =>
   coupon?.discountType === 'percent'
@@ -39,6 +39,28 @@ const normalizeCoupon = (coupon) => ({
   status: coupon.isActive ? 'Active' : 'Inactive',
 });
 
+const formatMetricValue = (value, { currency = false } = {}) => {
+  const numericValue = typeof value === 'number' ? value : Number(value || 0);
+
+  if (currency) {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(numericValue);
+  }
+
+  return new Intl.NumberFormat('en-US').format(numericValue);
+};
+
+const formatChange = (value) => {
+  const numericValue = typeof value === 'number' ? value : Number(value || 0);
+  const prefix = numericValue >= 0 ? '+' : '';
+
+  return `${prefix}${numericValue.toFixed(2)}%`;
+};
+
 const GiftsCouponsTable = () => {
   const dispatch = useDispatch();
   const [searchTerm, setSearchTerm] = useState('');
@@ -48,16 +70,9 @@ const GiftsCouponsTable = () => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState('All');
   const [currentPage, setCurrentPage] = useState(1);
-  const { coupons, pagination, status, error } = useSelector((state) => state.coupons);
+  const { coupons, pagination, metadata, status, error } = useSelector((state) => state.coupons);
 
   const filterOptions = ['Active', 'Inactive'];
-
-  const stats = [
-    { label: 'Total Redemptions', value: '19990', change: '+11.01%', trending: 'up' },
-    { label: 'Total Revenue', value: '$50,550', change: '+15.03%', trending: 'up' },
-    // { label: 'Conversion Rate', value: '61%', change: '-0.03%', trending: 'down' },
-    { label: 'User Engagement', value: '3,625', change: '+15.03%', trending: 'up' }
-  ];
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -83,6 +98,30 @@ const GiftsCouponsTable = () => {
     return coupon.status === selectedStatus;
   });
 
+  const stats = useMemo(
+    () => [
+      {
+        label: 'Total Redemptions',
+        value: formatMetricValue(metadata?.totalRedemptions?.value),
+        change: formatChange(metadata?.totalRedemptions?.changePercentage),
+        trending: Number(metadata?.totalRedemptions?.changePercentage || 0) >= 0 ? 'up' : 'down',
+      },
+      {
+        label: 'Total Revenue',
+        value: formatMetricValue(metadata?.totalRevenue?.value, { currency: true }),
+        change: formatChange(metadata?.totalRevenue?.changePercentage),
+        trending: Number(metadata?.totalRevenue?.changePercentage || 0) >= 0 ? 'up' : 'down',
+      },
+      {
+        label: 'User Engagement',
+        value: formatMetricValue(metadata?.userEngagement?.value),
+        change: formatChange(metadata?.userEngagement?.changePercentage),
+        trending: Number(metadata?.userEngagement?.changePercentage || 0) >= 0 ? 'up' : 'down',
+      },
+    ],
+    [metadata]
+  );
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="">
@@ -99,21 +138,37 @@ const GiftsCouponsTable = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           {stats.map((stat, index) => (
-            <Card key={index} className="bg-white">
-              <CardContent className="p-6">
-                <div className="text-sm text-gray-600 mb-2">{stat.label}</div>
-                <div className="flex items-center justify-between">
-                  <div className="text-3xl font-bold text-gray-900">{stat.value}</div>
-                  <div className={`flex items-center text-sm font-medium ${stat.trending === 'up' ? 'text-green-600' : 'text-red-600'}`}>
-                    {stat.change}
-                    {stat.trending === 'up' ? (
-                      <TrendingUp className="w-4 h-4 ml-1" />
-                    ) : (
-                      <TrendingDown className="w-4 h-4 ml-1" />
-                    )}
+            <Card key={index} className="border-slate-200 bg-white shadow-sm">
+              <CardContent className="flex min-h-[148px] flex-col justify-between p-6">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-medium text-slate-500">{stat.label}</p>
+                    <div className="mt-4 text-[2rem] font-semibold tracking-[-0.03em] text-slate-950">
+                      {stat.value}
+                    </div>
                   </div>
+                  <div
+                    className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-medium ${
+                      stat.trending === 'up'
+                        ? 'bg-emerald-50 text-emerald-700'
+                        : 'bg-red-50 text-red-700'
+                    }`}
+                  >
+                    {stat.trending === 'up' ? (
+                      <TrendingUp className="h-4 w-4" />
+                    ) : (
+                      <TrendingDown className="h-4 w-4" />
+                    )}
+                    <span>{stat.change}</span>
+                  </div>
+                </div>
+
+                <div className="mt-6 h-px w-full bg-slate-100" />
+
+                <div className="mt-4 text-xs font-medium uppercase tracking-[0.18em] text-slate-400">
+                  {metadata?.period ? `${metadata.period} snapshot` : 'Current snapshot'}
                 </div>
               </CardContent>
             </Card>
@@ -121,7 +176,7 @@ const GiftsCouponsTable = () => {
         </div>
 
         {/* Table Card */}
-        <Card className="bg-white">
+        <Card className="gap-0 bg-white py-0">
           <CardContent className="p-0">
             {/* Table Header */}
             <div className="flex items-center justify-between p-4 border-b">

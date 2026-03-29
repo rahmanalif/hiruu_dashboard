@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { BadgePercent, Check, Lock, X } from "lucide-react";
-import { resetUpdateCouponState, updateCoupon } from "@/store/couponsSlice";
+import { resetUpdateCouponState, updateCoupon } from "@/redux/couponsSlice";
 
 const getInitialFormState = (couponData) => ({
     campaignName: couponData?.campaignName || "",

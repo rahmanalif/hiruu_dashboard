@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
-import { fetchUsersQuery } from '@/store/usersSlice';
+import { fetchUsersQuery } from '@/redux/usersSlice';
 
 const Table = ({ children, className, ...props }) => (
   <div className="w-full overflow-auto">
@@ -54,7 +54,7 @@ const UserManagement = () => {
       <div>
         <h1 className="mb-6 text-2xl font-bold text-gray-900">User</h1>
 
-        <Card>
+        <Card className="gap-0 py-0">
           <CardHeader className="border-b bg-[#ECF7FE] p-4">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg font-semibold text-gray-900">Recently Added User</CardTitle>
@@ -73,7 +73,7 @@ const UserManagement = () => {
             </div>
           </CardHeader>
 
-          <CardContent>
+          <CardContent className="p-0">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -114,12 +114,20 @@ const UserManagement = () => {
                             {truncateUserId(user.id)}
                           </button>
                           {openUserId === user.id ? (
-                            <div className="absolute left-0 top-full z-20 mt-2 w-72 rounded-lg border border-gray-200 bg-white p-3 text-left shadow-lg">
-                              <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-500">
-                                Full User ID
-                              </p>
-                              <p className="break-all text-sm text-gray-900">{user.id}</p>
-                            </div>
+                            <>
+                              <button
+                                type="button"
+                                aria-label="Close user ID popup"
+                                onClick={() => setOpenUserId(null)}
+                                className="fixed inset-0 z-10 cursor-default"
+                              />
+                              <div className="absolute left-0 top-full z-20 mt-2 w-72 rounded-lg border border-gray-200 bg-white p-3 text-left shadow-lg">
+                                <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-500">
+                                  Full User ID
+                                </p>
+                                <p className="break-all text-sm text-gray-900">{user.id}</p>
+                              </div>
+                            </>
                           ) : null}
                         </div>
                       </TableCell>

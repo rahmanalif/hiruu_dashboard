@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from 'react';
 import { useDispatch, useSelector } from "react-redux";
-import { forgotPassword, loginUser, resetPassword } from "@/store/authSlice";
+import { forgotPassword, loginUser, resetPassword } from "@/redux/authSlice";
 import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';

@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import BusinessProfile from '../buissness/BusinessProfile';
 import { cn } from '@/lib/utils';
-import { fetchBusinessesQuery } from '@/store/businessesSlice';
+import { fetchBusinessesQuery } from '@/redux/businessesSlice';
 
 const Table = ({ children, className, ...props }) => (
   <div className="w-full overflow-auto">
@@ -101,7 +101,7 @@ const BusinessManagement = () => {
       <div>
         <h1 className="mb-6 text-2xl font-bold text-gray-900">Business</h1>
 
-        <Card>
+        <Card className="gap-0 py-0">
           <CardHeader className="border-b bg-[#ECF7FE] p-4">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg font-semibold text-gray-900">Registered Business</CardTitle>
@@ -120,7 +120,7 @@ const BusinessManagement = () => {
             </div>
           </CardHeader>
 
-          <CardContent className="p-4">
+          <CardContent className="p-0">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -164,12 +164,20 @@ const BusinessManagement = () => {
                             {truncateStoreId(business.id)}
                           </button>
                           {openStoreId === business.id ? (
-                            <div className="absolute left-0 top-full z-20 mt-2 w-72 rounded-lg border border-gray-200 bg-white p-3 text-left shadow-lg">
-                              <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-500">
-                                Full Store ID
-                              </p>
-                              <p className="break-all text-sm text-gray-900">{business.id}</p>
-                            </div>
+                            <>
+                              <button
+                                type="button"
+                                aria-label="Close store ID popup"
+                                onClick={() => setOpenStoreId(null)}
+                                className="fixed inset-0 z-10 cursor-default"
+                              />
+                              <div className="absolute left-0 top-full z-20 mt-2 w-72 rounded-lg border border-gray-200 bg-white p-3 text-left shadow-lg">
+                                <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-500">
+                                  Full Store ID
+                                </p>
+                                <p className="break-all text-sm text-gray-900">{business.id}</p>
+                              </div>
+                            </>
                           ) : null}
                         </div>
                       </TableCell>

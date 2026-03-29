@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Gift } from "lucide-react";
-import { createCoupon, resetCreateCouponState } from "@/store/couponsSlice";
+import { createCoupon, resetCreateCouponState } from "@/redux/couponsSlice";
 
 const generateCouponCode = () =>
     `OFFER${Math.random().toString(36).slice(2, 8).toUpperCase()}`;

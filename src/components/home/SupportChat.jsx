@@ -28,7 +28,7 @@ import {
   sendSupportChatMessage,
   appendIncomingMessage,
   setActiveChat,
-} from "@/store/supportChatSlice";
+} from "@/redux/supportChatSlice";
 import { getChatSocket, disconnectChatSocket } from "@/lib/chatSocket";
 import { resolveAccessToken } from "@/lib/auth";
 

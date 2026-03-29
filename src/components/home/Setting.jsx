@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Eye, EyeOff, LogOut } from 'lucide-react';
-import { logoutUser } from '@/store/authSlice';
+import { logoutUser } from '@/redux/authSlice';
 
 const SettingsPasswordReset = () => {
   const dispatch = useDispatch();

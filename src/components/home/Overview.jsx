@@ -1,5 +1,6 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,10 +28,14 @@ import {
   AlertCircle
 } from 'lucide-react';
 import BusinessProfile from '../buissness/BusinessProfile';
+import { fetchBusinessesQuery } from '@/redux/businessesSlice';
 
 const Overview = () => {
+  const dispatch = useDispatch();
+  const { businesses, pagination, status: businessesStatus, error: businessesError } = useSelector((state) => state.businesses);
   const [selectedPeriod, setSelectedPeriod] = useState('Month');
   const [selectedBusiness, setSelectedBusiness] = useState(null);
+  const [businessSearchTerm, setBusinessSearchTerm] = useState('');
 
   if (selectedBusiness) {
     return (
@@ -84,16 +89,32 @@ const Overview = () => {
     }
   ];
 
-  const businessData = [
-    { id: '29506', name: 'Tech-Haven', owner: 'Leslie Alexander', employees: 50, phone: '+30 21-1234-567', status: 'Unverified', plan: 'Premium' },
-    { id: '29505', name: 'Mountain Mercado', owner: 'Marvin McKinney', employees: 102, phone: '+30 21-1234-567', status: 'Pending', plan: '-' },
-    { id: '29504', name: 'Juniper & Tonic', owner: 'Kristin Watson', employees: 89, phone: '+30 21-1234-567', status: 'Inactive', plan: 'Premium' },
-    { id: '29503', name: 'Mountain Mercado', owner: 'Ralph Edwards', employees: 50, phone: '+30 21-1234-567', status: 'Verified', plan: 'Premium' },
-    { id: '29502', name: 'Oxheart', owner: 'Darrell Steward', employees: 102, phone: '+30 21-1234-567', status: 'Pending', plan: '-' },
-    { id: '29501', name: 'Juniper & Tonic', owner: 'Theresa Webb', employees: 89, phone: '+30 21-1234-567', status: 'Active', plan: 'Premium' },
-    { id: '29500', name: 'Mountain Mercado', owner: 'Eleanor Pena', employees: 50, phone: '+30 21-1234-567', status: 'Active', plan: 'Free' },
-    { id: '29499', name: 'Juniper & Tonic', owner: 'Kathryn Murphy', employees: 205, phone: '+30 21-1234-567', status: 'Verified', plan: 'Premium' }
-  ];
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      dispatch(
+        fetchBusinessesQuery({
+          page: 1,
+          limit: 8,
+          search: businessSearchTerm.trim(),
+        })
+      );
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [businessSearchTerm, dispatch]);
+
+  const businessData = useMemo(
+    () =>
+      businesses.map((business) => ({
+        ...business,
+        owner: business.owner?.name || 'N/A',
+        employees: business._count?.employments || 0,
+        phone: [business.countryCode, business.phoneNumber].filter(Boolean).join(' ') || 'N/A',
+        status: business?.isDeleted ? 'Inactive' : business?.isVerified ? 'Verified' : 'Unverified',
+        plan: business?.isPremium === true || business?.isPremium === 'true' || business?.isPremium === 1 ? 'Premium' : '-',
+      })),
+    [businesses]
+  );
 
   const getStatusColor = (status) => {
     const colors = {
@@ -148,15 +169,29 @@ const Overview = () => {
           </div>
 
           {/* Pending Actions */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold">Pending Actions</CardTitle>
+          <Card className="gap-0">
+            <CardHeader className="pb-4">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <CardTitle className="text-lg font-semibold">Pending Actions</CardTitle>
+                  <p className="mt-2 text-sm text-gray-500">
+                    Review the most urgent internal tasks waiting for action.
+                  </p>
+                </div>
+                <div className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600">
+                  {pendingActions.length} open
+                </div>
+              </div>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="flex h-full flex-col">
+              <div className="flex flex-col gap-3">
               {pendingActions.map((action, index) => {
                 const Icon = action.icon;
                 return (
-                  <div key={index} className={`p-4 border rounded-lg ${action.color} flex items-center justify-between`}>
+                  <div
+                    key={index}
+                    className={`flex items-center justify-between rounded-lg border p-4 ${action.color}`}
+                  >
                     <div className="flex items-center gap-3 flex-1">
                       <div className={`${action.iconBg} p-2 rounded-lg`}>
                         <Icon className={`w-5 h-5 ${action.iconColor}`} />
@@ -175,6 +210,22 @@ const Overview = () => {
                   </div>
                 );
               })}
+              </div>
+              <div className="mt-4 rounded-lg border border-gray-100 bg-gray-50 px-4 py-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-[0.16em] text-gray-400">
+                      Queue status
+                    </p>
+                    <p className="mt-1 text-sm text-gray-600">
+                      25 items need review across verification, chat, and reports.
+                    </p>
+                  </div>
+                  {/* <Button variant="ghost" size="sm" className="h-8 px-3 text-sm text-gray-700">
+                    View all
+                  </Button> */}
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -187,7 +238,12 @@ const Overview = () => {
               <div className="flex items-center space-x-2">
                 <div className="relative">
                   <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                  <Input placeholder="Search" className="pl-10 w-64" />
+                  <Input
+                    placeholder="Search"
+                    className="pl-10 w-64"
+                    value={businessSearchTerm}
+                    onChange={(event) => setBusinessSearchTerm(event.target.value)}
+                  />
                 </div>
                 
               </div>
@@ -208,37 +264,51 @@ const Overview = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {businessData.map((business) => (
-                  <TableRow key={business.id}>
-                    <TableCell className="font-medium">{business.id}</TableCell>
-                    <TableCell>{business.name}</TableCell>
-                    <TableCell>{business.owner}</TableCell>
-                    <TableCell>{business.employees}</TableCell>
-                    <TableCell>{business.phone}</TableCell>
-                    <TableCell>
-                      <Badge className={getStatusColor(business.status)} variant="secondary">
-                        {business.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{business.plan}</TableCell>
-                    <TableCell>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => {
-                          setSelectedBusiness(business);
-                          window.history.pushState(null, '', `?id=${business.id}`);
-                        }}
-                      >
-                        View
-                      </Button>
-                    </TableCell>
+                {businessesStatus === 'loading' ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center text-gray-500">Loading businesses...</TableCell>
                   </TableRow>
-                ))}
+                ) : businessesError ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center text-red-500">{businessesError}</TableCell>
+                  </TableRow>
+                ) : businessData.length ? (
+                  businessData.map((business) => (
+                    <TableRow key={business.id}>
+                      <TableCell className="font-medium">{business.id}</TableCell>
+                      <TableCell>{business.name || 'N/A'}</TableCell>
+                      <TableCell>{business.owner}</TableCell>
+                      <TableCell>{business.employees}</TableCell>
+                      <TableCell>{business.phone}</TableCell>
+                      <TableCell>
+                        <Badge className={getStatusColor(business.status)} variant="secondary">
+                          {business.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{business.plan}</TableCell>
+                      <TableCell>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            setSelectedBusiness(business);
+                            window.history.pushState(null, '', `?id=${business.id}`);
+                          }}
+                        >
+                          View
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center text-gray-500">No businesses found.</TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
             <div className="flex items-center justify-between mt-4">
-              <p className="text-sm text-gray-600">Total Business: 2025+</p>
+              <p className="text-sm text-gray-600">Total Business: {pagination?.total || 0}</p>
               <Button variant="link" className="text-blue-600">
                 See more <ChevronRight className="w-4 h-4 ml-1" />
               </Button>
