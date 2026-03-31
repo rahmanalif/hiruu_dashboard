@@ -115,6 +115,17 @@ const truncateAccess = (value, maxLength = 72) => {
   return `${value.slice(0, maxLength)}...`;
 };
 
+const getPopupPosition = (triggerRect, popupWidth) => {
+  const viewportPadding = 16;
+  const top = Math.min(triggerRect.bottom + 8, window.innerHeight - 80);
+  const left = Math.min(
+    Math.max(triggerRect.left, viewportPadding),
+    window.innerWidth - popupWidth - viewportPadding
+  );
+
+  return { top, left };
+};
+
 const RoleManagement = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -126,6 +137,8 @@ const RoleManagement = () => {
   const [selectedMaintainer, setSelectedMaintainer] = useState(null);
   const [openEmployeeId, setOpenEmployeeId] = useState(null);
   const [openAccessId, setOpenAccessId] = useState(null);
+  const [employeePopupPosition, setEmployeePopupPosition] = useState(null);
+  const [accessPopupPosition, setAccessPopupPosition] = useState(null);
 
   const fetchMaintainers = async () => {
     const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
@@ -179,6 +192,23 @@ const RoleManagement = () => {
 
   useEffect(() => {
     fetchMaintainers();
+  }, []);
+
+  useEffect(() => {
+    const handleViewportChange = () => {
+      setOpenEmployeeId(null);
+      setOpenAccessId(null);
+      setEmployeePopupPosition(null);
+      setAccessPopupPosition(null);
+    };
+
+    window.addEventListener("resize", handleViewportChange);
+    window.addEventListener("scroll", handleViewportChange, true);
+
+    return () => {
+      window.removeEventListener("resize", handleViewportChange);
+      window.removeEventListener("scroll", handleViewportChange, true);
+    };
   }, []);
 
   const filterOptions = useMemo(
@@ -287,23 +317,38 @@ const RoleManagement = () => {
                           <button
                             type="button"
                             className="text-left font-medium text-gray-900 hover:text-blue-600"
-                            onClick={() =>
-                              setOpenEmployeeId((currentId) =>
-                                currentId === employee.id ? null : employee.id
-                              )
-                            }
+                            onClick={(event) => {
+                              if (openEmployeeId === employee.id) {
+                                setOpenEmployeeId(null);
+                                setEmployeePopupPosition(null);
+                                return;
+                              }
+
+                              setEmployeePopupPosition(
+                                getPopupPosition(event.currentTarget.getBoundingClientRect(), 288)
+                              );
+                              setOpenEmployeeId(employee.id);
+                              setOpenAccessId(null);
+                              setAccessPopupPosition(null);
+                            }}
                           >
                             {truncateValue(employee.id)}
                           </button>
-                          {openEmployeeId === employee.id ? (
+                          {openEmployeeId === employee.id && employeePopupPosition ? (
                             <>
                               <button
                                 type="button"
                                 aria-label="Close employee ID popup"
-                                onClick={() => setOpenEmployeeId(null)}
+                                onClick={() => {
+                                  setOpenEmployeeId(null);
+                                  setEmployeePopupPosition(null);
+                                }}
                                 className="fixed inset-0 z-10 cursor-default"
                               />
-                              <div className="absolute left-0 top-full z-20 mt-2 w-72 rounded-lg border border-gray-200 bg-white p-3 text-left shadow-lg">
+                              <div
+                                className="fixed z-20 w-72 rounded-lg border border-gray-200 bg-white p-3 text-left shadow-lg"
+                                style={employeePopupPosition}
+                              >
                                 <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-500">
                                   Full Employee ID
                                 </p>
@@ -328,23 +373,38 @@ const RoleManagement = () => {
                           <button
                             type="button"
                             className="block w-full truncate text-left text-gray-900 hover:text-blue-600"
-                            onClick={() =>
-                              setOpenAccessId((currentId) =>
-                                currentId === employee.id ? null : employee.id
-                              )
-                            }
+                            onClick={(event) => {
+                              if (openAccessId === employee.id) {
+                                setOpenAccessId(null);
+                                setAccessPopupPosition(null);
+                                return;
+                              }
+
+                              setAccessPopupPosition(
+                                getPopupPosition(event.currentTarget.getBoundingClientRect(), 448)
+                              );
+                              setOpenAccessId(employee.id);
+                              setOpenEmployeeId(null);
+                              setEmployeePopupPosition(null);
+                            }}
                           >
                             {truncateAccess(employee.access)}
                           </button>
-                          {openAccessId === employee.id ? (
+                          {openAccessId === employee.id && accessPopupPosition ? (
                             <>
                               <button
                                 type="button"
                                 aria-label="Close access popup"
-                                onClick={() => setOpenAccessId(null)}
+                                onClick={() => {
+                                  setOpenAccessId(null);
+                                  setAccessPopupPosition(null);
+                                }}
                                 className="fixed inset-0 z-10 cursor-default"
                               />
-                              <div className="absolute left-0 top-full z-20 mt-2 w-[28rem] rounded-lg border border-gray-200 bg-white p-3 text-left shadow-lg">
+                              <div
+                                className="fixed z-20 w-[28rem] rounded-lg border border-gray-200 bg-white p-3 text-left shadow-lg"
+                                style={accessPopupPosition}
+                              >
                                 <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-500">
                                   Full Access
                                 </p>

@@ -29,6 +29,17 @@ const truncateStoreId = (storeId) => {
   return `${storeId.slice(0, 8)}...${storeId.slice(-4)}`;
 };
 
+const getPopupPosition = (triggerRect, popupWidth) => {
+  const viewportPadding = 16;
+  const top = Math.min(triggerRect.bottom + 8, window.innerHeight - 80);
+  const left = Math.min(
+    Math.max(triggerRect.left, viewportPadding),
+    window.innerWidth - popupWidth - viewportPadding
+  );
+
+  return { top, left };
+};
+
 const getBusinessStatus = (business) => {
   if (business?.isDeleted) {
     return "Inactive";
@@ -56,6 +67,7 @@ const BusinessManagement = () => {
   const [selectedBusiness, setSelectedBusiness] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [openStoreId, setOpenStoreId] = useState(null);
+  const [storePopupPosition, setStorePopupPosition] = useState(null);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -70,6 +82,21 @@ const BusinessManagement = () => {
 
     return () => clearTimeout(timeoutId);
   }, [currentPage, dispatch, searchTerm]);
+
+  useEffect(() => {
+    const handleViewportChange = () => {
+      setOpenStoreId(null);
+      setStorePopupPosition(null);
+    };
+
+    window.addEventListener("resize", handleViewportChange);
+    window.addEventListener("scroll", handleViewportChange, true);
+
+    return () => {
+      window.removeEventListener("resize", handleViewportChange);
+      window.removeEventListener("scroll", handleViewportChange, true);
+    };
+  }, []);
 
   const normalizedBusinesses = useMemo(
     () =>
@@ -155,23 +182,36 @@ const BusinessManagement = () => {
                           <button
                             type="button"
                             className="font-medium text-gray-900 hover:text-blue-600"
-                            onClick={() =>
-                              setOpenStoreId((currentId) =>
-                                currentId === business.id ? null : business.id
-                              )
-                            }
+                            onClick={(event) => {
+                              if (openStoreId === business.id) {
+                                setOpenStoreId(null);
+                                setStorePopupPosition(null);
+                                return;
+                              }
+
+                              setStorePopupPosition(
+                                getPopupPosition(event.currentTarget.getBoundingClientRect(), 288)
+                              );
+                              setOpenStoreId(business.id);
+                            }}
                           >
                             {truncateStoreId(business.id)}
                           </button>
-                          {openStoreId === business.id ? (
+                          {openStoreId === business.id && storePopupPosition ? (
                             <>
                               <button
                                 type="button"
                                 aria-label="Close store ID popup"
-                                onClick={() => setOpenStoreId(null)}
+                                onClick={() => {
+                                  setOpenStoreId(null);
+                                  setStorePopupPosition(null);
+                                }}
                                 className="fixed inset-0 z-10 cursor-default"
                               />
-                              <div className="absolute left-0 top-full z-20 mt-2 w-72 rounded-lg border border-gray-200 bg-white p-3 text-left shadow-lg">
+                              <div
+                                className="fixed z-20 w-72 rounded-lg border border-gray-200 bg-white p-3 text-left shadow-lg"
+                                style={storePopupPosition}
+                              >
                                 <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-500">
                                   Full Store ID
                                 </p>

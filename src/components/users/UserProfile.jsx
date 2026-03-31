@@ -17,6 +17,33 @@ export default function UserProfileActivity() {
     const [mainTab, setMainTab] = useState('account');
     const [isBanModalOpen, setIsBanModalOpen] = useState(false);
     const [isUserIdOpen, setIsUserIdOpen] = useState(false);
+    const [userIdPopupPosition, setUserIdPopupPosition] = useState(null);
+
+    const getPopupPosition = (triggerRect, popupWidth) => {
+        const viewportPadding = 16;
+        const top = Math.min(triggerRect.bottom + 8, window.innerHeight - 80);
+        const left = Math.min(
+            Math.max(triggerRect.left, viewportPadding),
+            window.innerWidth - popupWidth - viewportPadding
+        );
+
+        return { top, left };
+    };
+
+    React.useEffect(() => {
+        const handleViewportChange = () => {
+            setIsUserIdOpen(false);
+            setUserIdPopupPosition(null);
+        };
+
+        window.addEventListener("resize", handleViewportChange);
+        window.addEventListener("scroll", handleViewportChange, true);
+
+        return () => {
+            window.removeEventListener("resize", handleViewportChange);
+            window.removeEventListener("scroll", handleViewportChange, true);
+        };
+    }, []);
 
     const activityItems = [
         {
@@ -241,20 +268,37 @@ export default function UserProfileActivity() {
                                 <div className="col-span-2 relative">
                                     <button
                                         type="button"
-                                        onClick={() => setIsUserIdOpen((current) => !current)}
+                                        onClick={(event) => {
+                                            if (isUserIdOpen) {
+                                                setIsUserIdOpen(false);
+                                                setUserIdPopupPosition(null);
+                                                return;
+                                            }
+
+                                            setUserIdPopupPosition(
+                                                getPopupPosition(event.currentTarget.getBoundingClientRect(), 220)
+                                            );
+                                            setIsUserIdOpen(true);
+                                        }}
                                         className="text-gray-900 transition-colors hover:text-[#4FB2F3]"
                                     >
                                         15265
                                     </button>
-                                    {isUserIdOpen && (
+                                    {isUserIdOpen && userIdPopupPosition && (
                                         <>
                                             <button
                                                 type="button"
                                                 aria-label="Close full ID popup"
-                                                onClick={() => setIsUserIdOpen(false)}
+                                                onClick={() => {
+                                                    setIsUserIdOpen(false);
+                                                    setUserIdPopupPosition(null);
+                                                }}
                                                 className="fixed inset-0 z-10 cursor-default"
                                             />
-                                            <div className="absolute left-0 top-full z-20 mt-2 w-max max-w-[220px] rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-700 shadow-lg">
+                                            <div
+                                                className="fixed z-20 w-max max-w-[220px] rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-700 shadow-lg"
+                                                style={userIdPopupPosition}
+                                            >
                                                 Full ID: 15265
                                             </div>
                                         </>

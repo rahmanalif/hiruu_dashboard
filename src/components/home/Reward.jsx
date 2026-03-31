@@ -27,6 +27,17 @@ const truncateUserId = (userId) => {
   return `${userId.slice(0, 8)}...${userId.slice(-4)}`;
 };
 
+const getPopupPosition = (triggerRect, popupWidth) => {
+  const viewportPadding = 16;
+  const top = Math.min(triggerRect.bottom + 8, window.innerHeight - 80);
+  const left = Math.min(
+    Math.max(triggerRect.left, viewportPadding),
+    window.innerWidth - popupWidth - viewportPadding
+  );
+
+  return { top, left };
+};
+
 const getTokenPrefix = (type) => {
   if (type === 'earned') {
     return '+';
@@ -66,6 +77,7 @@ const RewardsManagement = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
   const [openUserId, setOpenUserId] = useState(null);
+  const [userPopupPosition, setUserPopupPosition] = useState(null);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -80,6 +92,21 @@ const RewardsManagement = () => {
 
     return () => clearTimeout(timeoutId);
   }, [currentPage, dispatch, searchTerm]);
+
+  useEffect(() => {
+    const handleViewportChange = () => {
+      setOpenUserId(null);
+      setUserPopupPosition(null);
+    };
+
+    window.addEventListener("resize", handleViewportChange);
+    window.addEventListener("scroll", handleViewportChange, true);
+
+    return () => {
+      window.removeEventListener("resize", handleViewportChange);
+      window.removeEventListener("scroll", handleViewportChange, true);
+    };
+  }, []);
 
   const rewardRows = useMemo(
     () =>
@@ -169,23 +196,36 @@ const RewardsManagement = () => {
                           <button
                             type="button"
                             className="font-medium text-gray-900 hover:text-blue-600"
-                            onClick={() =>
-                              setOpenUserId((currentId) =>
-                                currentId === reward.id ? null : reward.id
-                              )
-                            }
+                            onClick={(event) => {
+                              if (openUserId === reward.id) {
+                                setOpenUserId(null);
+                                setUserPopupPosition(null);
+                                return;
+                              }
+
+                              setUserPopupPosition(
+                                getPopupPosition(event.currentTarget.getBoundingClientRect(), 288)
+                              );
+                              setOpenUserId(reward.id);
+                            }}
                           >
                             {truncateUserId(reward.userId)}
                           </button>
-                          {openUserId === reward.id ? (
+                          {openUserId === reward.id && userPopupPosition ? (
                             <>
                               <button
                                 type="button"
                                 aria-label="Close reward user ID popup"
-                                onClick={() => setOpenUserId(null)}
+                                onClick={() => {
+                                  setOpenUserId(null);
+                                  setUserPopupPosition(null);
+                                }}
                                 className="fixed inset-0 z-10 cursor-default"
                               />
-                              <div className="absolute left-0 top-full z-20 mt-2 w-72 rounded-lg border border-gray-200 bg-white p-3 text-left shadow-lg">
+                              <div
+                                className="fixed z-20 w-72 rounded-lg border border-gray-200 bg-white p-3 text-left shadow-lg"
+                                style={userPopupPosition}
+                              >
                                 <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-500">
                                   Full User ID
                                 </p>
