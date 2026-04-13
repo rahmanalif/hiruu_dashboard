@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { readStoredAuth, resolveAccessToken } from '@/lib/auth';
 // Table components inline
 const Table = ({ children, ...props }) => (
   <div className="w-full overflow-auto">
@@ -30,64 +31,205 @@ import {
 import BusinessProfile from '../buissness/BusinessProfile';
 import { fetchBusinessesQuery } from '@/redux/businessesSlice';
 
+const getAccessToken = () => resolveAccessToken(readStoredAuth()?.tokens);
+
+const periodOptions = [
+  { label: 'Daily', value: 'daily' },
+  { label: 'Weekly', value: 'weekly' },
+  { label: 'Monthly', value: 'monthly' },
+];
+
+const getFirstValue = (sources, keys, fallback = 0) => {
+  for (const source of sources) {
+    if (!source || typeof source !== 'object') {
+      continue;
+    }
+
+    for (const key of keys) {
+      const value = source[key];
+      if (value !== undefined && value !== null) {
+        return value;
+      }
+    }
+  }
+
+  return fallback;
+};
+
+const toNumber = (value, fallback = 0) => {
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) ? numericValue : fallback;
+};
+
+const formatCount = (value) => new Intl.NumberFormat('en-US').format(toNumber(value));
+
+const formatCurrency = (value) =>
+  new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0,
+  }).format(toNumber(value));
+
+const formatGrowth = (value) => {
+  const numericValue = toNumber(value);
+  const sign = numericValue > 0 ? '+' : '';
+  return `${sign}${numericValue.toFixed(2)}%`;
+};
+
+const buildOverviewStats = (payload) => {
+  const data = payload?.data || {};
+  const metrics = data?.metrics || {};
+  const sources = [metrics, data, data.summary, data.statistics, data.stats];
+
+  const newUsersValue = getFirstValue(sources, [
+    'newUsers',
+    'newUser',
+    'newUsersCount',
+    'newUserCount',
+  ]);
+  const newUsersGrowth = getFirstValue(sources, [
+    'newUsersGrowth',
+    'newUserGrowth',
+    'newUsersGrowthPercent',
+    'newUserGrowthPercent',
+  ]);
+
+  const totalUsersValue = getFirstValue(sources, [
+    'totalUsers',
+    'totalUser',
+    'users',
+    'userCount',
+    'totalUsersCount',
+  ]);
+  const totalUsersGrowth = getFirstValue(sources, [
+    'totalUsersGrowth',
+    'totalUserGrowth',
+    'totalUsersGrowthPercent',
+    'totalUserGrowthPercent',
+    'usersGrowthPercent',
+  ]);
+
+  const newBusinessesValue = getFirstValue(sources, [
+    'newBusinesses',
+    'newBusiness',
+    'newBusinessesCount',
+    'newBusinessCount',
+  ]);
+  const newBusinessesGrowth = getFirstValue(sources, [
+    'newBusinessesGrowth',
+    'newBusinessGrowth',
+    'newBusinessesGrowthPercent',
+    'newBusinessGrowthPercent',
+  ]);
+
+  const paymentsValue = getFirstValue(sources, [
+    'payments',
+    'payment',
+    'paymentAmount',
+    'totalPayments',
+    'totalPaymentAmount',
+  ]);
+  const paymentsGrowth = getFirstValue(sources, [
+    'paymentsGrowth',
+    'paymentGrowth',
+    'paymentsGrowthPercent',
+    'paymentGrowthPercent',
+  ]);
+
+  return [
+    {
+      title: 'New users',
+      value: formatCount(getFirstValue([metrics.newUsers], ['current'], newUsersValue)),
+      change: formatGrowth(getFirstValue([metrics.newUsers], ['growthPercent'], newUsersGrowth)),
+      isPositive: toNumber(getFirstValue([metrics.newUsers], ['growthPercent'], newUsersGrowth)) >= 0,
+    },
+    {
+      title: 'Total User',
+      value: formatCount(getFirstValue([metrics.totalUsers], ['current'], totalUsersValue)),
+      change: formatGrowth(getFirstValue([metrics.totalUsers], ['growthPercent'], totalUsersGrowth)),
+      isPositive: toNumber(getFirstValue([metrics.totalUsers], ['growthPercent'], totalUsersGrowth)) >= 0,
+    },
+    {
+      title: 'New Businesses',
+      value: formatCount(getFirstValue([metrics.newBusinesses], ['current'], newBusinessesValue)),
+      change: formatGrowth(getFirstValue([metrics.newBusinesses], ['growthPercent'], newBusinessesGrowth)),
+      isPositive: toNumber(getFirstValue([metrics.newBusinesses], ['growthPercent'], newBusinessesGrowth)) >= 0,
+    },
+    {
+      title: 'Payments',
+      value: formatCurrency(getFirstValue([metrics.payments], ['currentAmount', 'current'], paymentsValue)),
+      change: formatGrowth(getFirstValue([metrics.payments], ['growthPercent'], paymentsGrowth)),
+      isPositive: toNumber(getFirstValue([metrics.payments], ['growthPercent'], paymentsGrowth)) >= 0,
+    }
+  ];
+};
+
+const buildPendingActions = (payload) => {
+  const metrics = payload?.data?.metrics || {};
+
+  const verificationCount = toNumber(metrics.verification);
+  const supportChatCount = toNumber(metrics.supportChat);
+  const reportsCount = toNumber(metrics.reports);
+  const openCount = verificationCount + supportChatCount + reportsCount;
+
+  return {
+    openCount,
+    queueStatus: `${openCount} items need review across verification, chat, and reports.`,
+    actions: [
+      {
+        title: 'Verification',
+        subtitle: `${verificationCount} stores awaiting verification`,
+        action: 'Review',
+        color: 'bg-blue-50 border-blue-100',
+        icon: ShieldCheck,
+        iconColor: 'text-blue-500',
+        iconBg: 'bg-blue-100',
+        buttonColor: 'bg-blue-500 hover:bg-blue-600'
+      },
+      {
+        title: 'Support Chat',
+        subtitle: `${supportChatCount} New Chat`,
+        action: 'Respond',
+        color: 'bg-orange-50 border-orange-100',
+        icon: MessageSquare,
+        iconColor: 'text-orange-500',
+        iconBg: 'bg-orange-100',
+        buttonColor: 'bg-orange-500 hover:bg-orange-600'
+      },
+      {
+        title: 'Reports',
+        subtitle: `${reportsCount} new report`,
+        action: 'Investigate',
+        color: 'bg-red-50 border-red-100',
+        icon: AlertCircle,
+        iconColor: 'text-red-500',
+        iconBg: 'bg-red-100',
+        buttonColor: 'bg-red-500 hover:bg-red-600'
+      }
+    ]
+  };
+};
+
 const Overview = () => {
   const dispatch = useDispatch();
   const { businesses, pagination, status: businessesStatus, error: businessesError } = useSelector((state) => state.businesses);
-  const [selectedPeriod, setSelectedPeriod] = useState('Month');
   const [selectedBusiness, setSelectedBusiness] = useState(null);
   const [businessSearchTerm, setBusinessSearchTerm] = useState('');
-
-  if (selectedBusiness) {
-    return (
-      <BusinessProfile 
-        business={selectedBusiness} 
-        onBack={() => {
-          setSelectedBusiness(null);
-          window.history.pushState(null, '', window.location.pathname);
-        }} 
-      />
-    );
-  }
-
-  const statsData = [
-    { title: 'New users', value: '1,025', change: '+11.01%', isPositive: true },
-    { title: 'Total User', value: '3,625', change: '+15.03%', isPositive: true },
-    { title: 'New Businesses', value: '10,625', change: '-0.03%', isPositive: false },
-    { title: 'Payments', value: '$3,625', change: '+15.03%', isPositive: true }
-  ];
-
-  const pendingActions = [
-    {
-      title: 'Verification',
-      subtitle: '12 stores awaiting verification',
-      action: 'Review',
-      color: 'bg-blue-50 border-blue-100',
-      icon: ShieldCheck,
-      iconColor: 'text-blue-500',
-      iconBg: 'bg-blue-100',
-      buttonColor: 'bg-blue-500 hover:bg-blue-600'
-    },
-    {
-      title: 'Support Chat',
-      subtitle: '8 New Chat',
-      action: 'Respond',
-      color: 'bg-orange-50 border-orange-100',
-      icon: MessageSquare,
-      iconColor: 'text-orange-500',
-      iconBg: 'bg-orange-100',
-      buttonColor: 'bg-orange-500 hover:bg-orange-600'
-    },
-    {
-      title: 'Reports',
-      subtitle: '5 new report',
-      action: 'Investigate',
-      color: 'bg-red-50 border-red-100',
-      icon: AlertCircle,
-      iconColor: 'text-red-500',
-      iconBg: 'bg-red-100',
-      buttonColor: 'bg-red-500 hover:bg-red-600'
-    }
-  ];
+  const [selectedPeriod, setSelectedPeriod] = useState('daily');
+  const [statsData, setStatsData] = useState(() =>
+    buildOverviewStats({
+      data: {},
+    })
+  );
+  const [pendingActionsData, setPendingActionsData] = useState(() =>
+    buildPendingActions({
+      data: {
+        metrics: {},
+      },
+    })
+  );
+  const [statsStatus, setStatsStatus] = useState('idle');
+  const [statsError, setStatsError] = useState('');
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -102,6 +244,63 @@ const Overview = () => {
 
     return () => clearTimeout(timeoutId);
   }, [businessSearchTerm, dispatch]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const loadDashboardAnalytics = async () => {
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+      const accessToken = getAccessToken();
+
+      if (!baseUrl) {
+        setStatsStatus('failed');
+        setStatsError('Missing NEXT_PUBLIC_API_BASE_URL');
+        return;
+      }
+
+      if (!accessToken) {
+        setStatsStatus('failed');
+        setStatsError('Missing access token');
+        return;
+      }
+
+      setStatsStatus('loading');
+      setStatsError('');
+
+      try {
+        const params = new URLSearchParams({ period: selectedPeriod });
+        const response = await fetch(`${baseUrl}/analytics/system/dashboard?${params.toString()}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`,
+          },
+          signal: controller.signal,
+        });
+
+        const payload = await response.json().catch(() => null);
+
+        if (!response.ok || !payload?.success) {
+          throw new Error(payload?.message || 'Failed to load dashboard analytics');
+        }
+
+        setStatsData(buildOverviewStats(payload));
+        setPendingActionsData(buildPendingActions(payload));
+        setStatsStatus('succeeded');
+      } catch (error) {
+        if (error?.name === 'AbortError') {
+          return;
+        }
+
+        setStatsStatus('failed');
+        setStatsError(error?.message || 'Failed to load dashboard analytics');
+      }
+    };
+
+    loadDashboardAnalytics();
+
+    return () => controller.abort();
+  }, [selectedPeriod]);
 
   const businessData = useMemo(
     () =>
@@ -127,20 +326,46 @@ const Overview = () => {
     return colors[status] || 'bg-gray-100 text-gray-800';
   };
 
+  if (selectedBusiness) {
+    return (
+      <BusinessProfile 
+        business={selectedBusiness} 
+        onBack={() => {
+          setSelectedBusiness(null);
+          window.history.pushState(null, '', window.location.pathname);
+        }} 
+      />
+    );
+  }
+
   return (
     <div className="flex-1 overflow-auto bg-gray-50">
 
       {/* Content */}
       <div className="p-8">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Overview</h1>
-          <div className="flex items-center space-x-2">
-            <span className="text-sm text-gray-600">Aug 1 to Aug 31</span>
-            <select className="px-3 py-2 border border-gray-300 rounded-lg text-sm">
-              <option>Monthly</option>
-              <option>Weekly</option>
-              <option>Daily</option>
-            </select>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Overview</h1>
+            <p className="mt-1 text-sm text-gray-500">
+              Live growth analytics for users and payments.
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm">
+              <Filter className="h-4 w-4 text-gray-500" />
+              <span className="font-medium">Filter</span>
+              <select
+                className="bg-transparent outline-none"
+                value={selectedPeriod}
+                onChange={(event) => setSelectedPeriod(event.target.value)}
+              >
+                {periodOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
 
@@ -161,6 +386,12 @@ const Overview = () => {
             </Card>
           ))}
         </div>
+        {statsStatus === 'loading' ? (
+          <p className="-mt-4 mb-8 text-sm text-gray-500">Updating overview analytics...</p>
+        ) : null}
+        {statsStatus === 'failed' ? (
+          <p className="-mt-4 mb-8 text-sm text-red-500">{statsError}</p>
+        ) : null}
 
         <div className="grid grid-cols-3 gap-6 mb-8">
           {/* Chart */}
@@ -179,13 +410,13 @@ const Overview = () => {
                   </p>
                 </div>
                 <div className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600">
-                  {pendingActions.length} open
+                  {pendingActionsData.openCount} open
                 </div>
               </div>
             </CardHeader>
             <CardContent className="flex h-full flex-col">
               <div className="flex flex-col gap-3">
-              {pendingActions.map((action, index) => {
+              {pendingActionsData.actions.map((action, index) => {
                 const Icon = action.icon;
                 return (
                   <div
@@ -218,7 +449,7 @@ const Overview = () => {
                       Queue status
                     </p>
                     <p className="mt-1 text-sm text-gray-600">
-                      25 items need review across verification, chat, and reports.
+                      {pendingActionsData.queueStatus}
                     </p>
                   </div>
                   {/* <Button variant="ghost" size="sm" className="h-8 px-3 text-sm text-gray-700">
