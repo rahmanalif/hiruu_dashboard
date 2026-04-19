@@ -352,24 +352,18 @@ export default function UserProfileActivity() {
                 {/* Right Content - Tabs */}
                 <div className="lg:col-span-2">
                     <Tabs value={mainTab} onValueChange={setMainTab} className="mb-6">
-                        <TabsList className="grid w-full grid-cols-3 gap-2 bg-transparent p-0">
+                        <TabsList className="grid w-full grid-cols-2 gap-2 bg-transparent p-0">
                             <TabsTrigger
                                 value="account"
                                 className="data-[state=active]:border-2 data-[state=active]:border-[#4FB2FE] data-[state=active]:bg-[#ECF7FE] data-[state=active]:shadow-none bg-white border border-transparent"
                             >
-                                Account
+                                Activity Log
                             </TabsTrigger>
                             <TabsTrigger
                                 value="billing"
                                 className="data-[state=active]:border-2 data-[state=active]:border-[#4FB2FE] data-[state=active]:bg-[#ECF7FE] data-[state=active]:shadow-none bg-white border border-transparent"
                             >
                                 Billing & Plan
-                            </TabsTrigger>
-                            <TabsTrigger
-                                value="activity"
-                                className="data-[state=active]:border-2 data-[state=active]:border-[#4FB2FE] data-[state=active]:bg-[#ECF7FE] data-[state=active]:shadow-none bg-white border border-transparent"
-                            >
-                                Activity Log
                             </TabsTrigger>
                         </TabsList>
 
@@ -515,34 +509,6 @@ export default function UserProfileActivity() {
                             </div>
                         </TabsContent>
 
-                        {/* Activity Log Tab Content */}
-                        <TabsContent value="activity" className="mt-6">
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>User Activity Log</CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="space-y-3">
-                                        {activityLogItems.map((item) => (
-                                            <div key={item.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                                                <div className="flex items-start gap-3">
-                                                    <div className={`${item.bgColor} w-12 h-12 rounded-lg flex items-center justify-center text-white font-bold shrink-0`}>
-                                                        {item.logo}
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <div className="flex justify-between items-start gap-4 mb-1">
-                                                            <h3 className="font-semibold text-gray-900">{item.name}</h3>
-                                                            <span className="text-xs text-gray-500 whitespace-nowrap">{item.date}</span>
-                                                        </div>
-                                                        <p className="text-sm text-gray-600">{item.description}</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        </TabsContent>
                     </Tabs>
                 </div>
             </div>
