@@ -1,522 +1,1053 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft, Star, MapPin, Phone, Calendar, Globe, Building2, Menu } from 'lucide-react';
+import { ChevronLeft, Star, MapPin, Menu, BadgeCheck } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import BanUserModal from '@/components/modals/BanUserModal';
+import { readStoredAuth, resolveAccessToken } from '@/lib/auth';
 
-export default function UserProfileActivity() {
-    const router = useRouter();
-    const [activeTab, setActiveTab] = useState('all');
-    const [mainTab, setMainTab] = useState('account');
-    const [isBanModalOpen, setIsBanModalOpen] = useState(false);
-    const [isUserIdOpen, setIsUserIdOpen] = useState(false);
-    const [userIdPopupPosition, setUserIdPopupPosition] = useState(null);
+const getAccessToken = () => resolveAccessToken(readStoredAuth()?.tokens);
 
-    const getPopupPosition = (triggerRect, popupWidth) => {
-        const viewportPadding = 16;
-        const top = Math.min(triggerRect.bottom + 8, window.innerHeight - 80);
-        const left = Math.min(
-            Math.max(triggerRect.left, viewportPadding),
-            window.innerWidth - popupWidth - viewportPadding
-        );
+const pickFirst = (...values) =>
+  values.find((value) => value !== undefined && value !== null && value !== '') ?? '';
 
-        return { top, left };
+const toArray = (value) => {
+  if (Array.isArray(value)) {
+    return value;
+  }
+
+  if (value && typeof value === 'object') {
+    return [value];
+  }
+
+  return [];
+};
+
+const formatDate = (value, fallback = 'N/A') => {
+  if (!value) {
+    return fallback;
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return typeof value === 'string' ? value : fallback;
+  }
+
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(date);
+};
+
+const formatDateTime = (value, fallback = 'N/A') => {
+  if (!value) {
+    return fallback;
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return typeof value === 'string' ? value : fallback;
+  }
+
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(date);
+};
+
+const toTitleCase = (value) =>
+  String(value || '')
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+
+const summarizeLogDescription = (log) => {
+  const directDescription = pickFirst(
+    log.message,
+    log.description,
+    log.details,
+    log.summary,
+    log.metadata?.message,
+    log.meta?.message
+  );
+
+  if (directDescription) {
+    return directDescription;
+  }
+
+  const entityType = pickFirst(log.entityType, log.entity?.type);
+  const entityId = pickFirst(log.entityId, log.entity?.id);
+  const source = pickFirst(log.source, log.origin);
+
+  const parts = [
+    entityType ? `Entity: ${toTitleCase(entityType)}` : '',
+    entityId ? `ID: ${entityId}` : '',
+    source ? `Source: ${toTitleCase(source)}` : '',
+  ].filter(Boolean);
+
+  return parts.join(' | ') || 'Activity recorded';
+};
+
+const classifyActivityCategory = (log) => {
+  const haystack = [
+    pickFirst(log.action, log.type, log.event, log.name),
+    pickFirst(log.message, log.description, log.details),
+    pickFirst(log.entityType, log.source),
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+
+  if (haystack.includes('role')) {
+    return 'role';
+  }
+
+  if (haystack.includes('ai')) {
+    return 'ai';
+  }
+
+  if (haystack.includes('token')) {
+    return 'tokens';
+  }
+
+  if (haystack.includes('premium') || haystack.includes('plan') || haystack.includes('subscription')) {
+    return 'premium';
+  }
+
+  if (haystack.includes('job') || haystack.includes('application') || haystack.includes('apply')) {
+    return 'job';
+  }
+
+  return 'all';
+};
+
+const mapActivityLogItem = (log, index) => ({
+  id: pickFirst(log.id, log._id, `${index}`),
+  title: toTitleCase(pickFirst(log.action, log.type, log.event, log.name, 'Activity')),
+  description: summarizeLogDescription(log),
+  date: formatDateTime(pickFirst(log.occurredAt, log.createdAt, log.updatedAt)),
+  category: classifyActivityCategory(log),
+});
+
+const getInitials = (name) => {
+  if (!name) {
+    return 'U';
+  }
+
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join('') || 'U';
+};
+
+const getPopupPosition = (triggerRect, popupWidth) => {
+  const viewportPadding = 16;
+  const top = Math.min(triggerRect.bottom + 8, window.innerHeight - 80);
+  const left = Math.min(
+    Math.max(triggerRect.left, viewportPadding),
+    window.innerWidth - popupWidth - viewportPadding
+  );
+
+  return { top, left };
+};
+
+const buildGradientBackground = (background) => {
+  const colors = background?.gradient?.colors;
+
+  if (!Array.isArray(colors) || colors.length === 0) {
+    return 'linear-gradient(90deg, #C0FFCE 0%, #E5FDEE 100%)';
+  }
+
+  const start = background?.gradient?.start ?? { x: 0, y: 0 };
+  const end = background?.gradient?.end ?? { x: 1, y: 0 };
+  const dx = Number(end.x ?? 1) - Number(start.x ?? 0);
+  const dy = Number(end.y ?? 0) - Number(start.y ?? 0);
+  const angle = ((Math.atan2(dy, dx) * 180) / Math.PI + 90 + 360) % 360;
+  const colorStops = colors.map((color, index) => {
+    const stop = colors.length === 1 ? 0 : (index / (colors.length - 1)) * 100;
+    return `${color} ${stop}%`;
+  });
+
+  return `linear-gradient(${angle}deg, ${colorStops.join(', ')})`;
+};
+
+const getPositionStyle = (position = {}) => {
+  const style = {};
+
+  ['top', 'right', 'bottom', 'left'].forEach((side) => {
+    if (typeof position?.[side] === 'number') {
+      style[side] = `${position[side]}px`;
+    }
+  });
+
+  return style;
+};
+
+const getSizeStyle = (size = {}) => ({
+  width: typeof size?.width === 'number' ? `${size.width}px` : undefined,
+  height: typeof size?.height === 'number' ? `${size.height}px` : undefined,
+});
+
+const BADGE_TIER_IMAGE_MAP = {
+  bronze: '/bronze.png',
+  silver: '/silver.png',
+  gold: '/gold.png',
+  diamond: '/diamond.png',
+};
+
+const hasValue = (value) => value !== undefined && value !== null && value !== '';
+
+const getBusinessTypeLabel = (business, employment) =>
+  pickFirst(
+    employment?.role?.role?.name,
+    employment?.role?.name,
+    business?.category,
+    business?.industry,
+    business?.subscriptions?.[0]?.plan?.tier ? `${toTitleCase(business.subscriptions[0].plan.tier)} Plan` : '',
+    business?.ownerId && employment ? 'Employee' : '',
+    business?.ownerId ? 'Owned Business' : '',
+    'Business'
+  );
+
+export default function UserProfileActivity({ userId }) {
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState('all');
+  const [mainTab, setMainTab] = useState('billing');
+  const [isBanModalOpen, setIsBanModalOpen] = useState(false);
+  const [isUserIdOpen, setIsUserIdOpen] = useState(false);
+  const [userIdPopupPosition, setUserIdPopupPosition] = useState(null);
+  const [profileStatus, setProfileStatus] = useState('idle');
+  const [profileError, setProfileError] = useState('');
+  const [userDetails, setUserDetails] = useState(null);
+  const [activityLogStatus, setActivityLogStatus] = useState('idle');
+  const [activityLogError, setActivityLogError] = useState('');
+  const [activityLogs, setActivityLogs] = useState([]);
+
+  useEffect(() => {
+    const handleViewportChange = () => {
+      setIsUserIdOpen(false);
+      setUserIdPopupPosition(null);
     };
 
-    React.useEffect(() => {
-        const handleViewportChange = () => {
-            setIsUserIdOpen(false);
-            setUserIdPopupPosition(null);
-        };
+    window.addEventListener('resize', handleViewportChange);
+    window.addEventListener('scroll', handleViewportChange, true);
 
-        window.addEventListener("resize", handleViewportChange);
-        window.addEventListener("scroll", handleViewportChange, true);
+    return () => {
+      window.removeEventListener('resize', handleViewportChange);
+      window.removeEventListener('scroll', handleViewportChange, true);
+    };
+  }, []);
 
-        return () => {
-            window.removeEventListener("resize", handleViewportChange);
-            window.removeEventListener("scroll", handleViewportChange, true);
-        };
-    }, []);
+  useEffect(() => {
+    const controller = new AbortController();
 
-    const activityItems = [
-        {
-            id: 1,
-            type: 'redeem',
-            title: 'Redeem Tokens',
-            description: 'You used 15 Tokens to Buy 1 Month Premium',
-            date: 'Date & Time',
-            category: 'tokens'
-        },
-        {
-            id: 2,
-            type: 'role',
-            title: 'Your Role Changes',
-            description: 'Your role for project \'Alpha\' was updated from \'Viewer\'',
-            date: 'Date & Time',
-            category: 'role'
-        },
-        {
-            id: 3,
-            type: 'text',
-            title: 'Text',
-            description: 'test',
-            date: 'Date & Time',
-            category: 'all'
-        },
-        {
-            id: 4,
-            type: 'redeem',
-            title: 'Redeem Tokens',
-            description: 'You used 15 Tokens to Buy 1 Month Premium',
-            date: 'Date & Time',
-            category: 'tokens'
-        },
-        {
-            id: 5,
-            type: 'job',
-            title: 'Job Apply',
-            description: 'Log In Daily for 7 Days earn 20 token',
-            date: 'Date & Time',
-            category: 'job'
-        },
-        {
-            id: 6,
-            type: 'earn',
-            title: 'Earn Token',
-            description: 'Log In Daily for 7 Days earn 20 token',
-            date: 'Date & Time',
-            category: 'premium'
-        },
-        {
-            id: 7,
-            type: 'earn',
-            title: 'Earn Token',
-            description: 'Log In Daily for 7 Days earn 20 token',
-            date: 'Date & Time',
-            category: 'premium'
-        },
-        {
-            id: 8,
-            type: 'earn',
-            title: 'Earn Token',
-            description: 'Log In Daily for 7 Days earn 20 token',
-            date: 'Date & Time',
-            category: 'premium'
+    const loadUserProfile = async () => {
+      if (!userId) {
+        setProfileStatus('failed');
+        setProfileError('Missing user ID');
+        return;
+      }
+
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+      const accessToken = getAccessToken();
+
+      if (!baseUrl) {
+        setProfileStatus('failed');
+        setProfileError('Missing NEXT_PUBLIC_API_BASE_URL');
+        return;
+      }
+
+      if (!accessToken) {
+        setProfileStatus('failed');
+        setProfileError('Missing access token');
+        return;
+      }
+
+      setProfileStatus('loading');
+      setProfileError('');
+
+      try {
+        const response = await fetch(`${baseUrl}/users/admin/${userId}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`,
+          },
+          signal: controller.signal,
+        });
+
+        const payload = await response.json().catch(() => null);
+
+        if (!response.ok) {
+          throw new Error(payload?.message || 'Failed to load user profile');
         }
-    ];
 
-    const referrals = [
-        { user: 'Kristin Watson', date: 'Aug 10, 2025', tokens: 20 },
-        { user: 'Ronald Richards', date: 'Aug 10, 2025', tokens: 20 },
-        { user: 'Annette Black', date: 'Aug 10, 2025', tokens: 20 },
-        { user: 'Annette Black', date: 'Aug 10, 2025', tokens: 20 },
-        { user: 'Eleanor Pena', date: 'Aug 10, 2025', tokens: 20 },
-        { user: 'Darrell Steward', date: 'Aug 10, 2025', tokens: 20 }
-    ];
+        const data =
+          payload?.data?.user ||
+          payload?.data?.result ||
+          payload?.data ||
+          payload?.user ||
+          payload?.result ||
+          payload;
 
-    const activityLogItems = [
-        {
-            id: 1,
-            name: 'Louis Vuitton',
-            logo: 'LV',
-            description: 'Subscription renews on Jan 29, 2024',
-            date: 'Aug,12 2025',
-            bgColor: 'bg-red-500'
-        },
-        {
-            id: 2,
-            name: 'IBM',
-            logo: 'IBM',
-            description: 'Track sign-ins, failed attempts, and suspicious activities to prevent unauthorized access',
-            date: 'Aug,12 2025',
-            bgColor: 'bg-blue-500'
-        },
-        {
-            id: 3,
-            name: "McDonald's",
-            logo: 'M',
-            description: 'Monitor user actions like file access, sharing, and system changes to ensure proper use of resources',
-            date: 'Aug,12 2025',
-            bgColor: 'bg-red-600'
-        },
-        {
-            id: 4,
-            name: "L'Oréal",
-            logo: 'L',
-            description: 'Provide a trail for forensic analysis during security breaches or policy violations.',
-            date: 'Aug,12 2025',
-            bgColor: 'bg-gray-800'
-        },
-        {
-            id: 5,
-            name: 'Ferrari',
-            logo: 'F',
-            description: 'suspicious login attempts',
-            date: 'Aug,12 2025',
-            bgColor: 'bg-blue-600'
-        },
-        {
-            id: 6,
-            name: 'Starbucks',
-            logo: 'S',
-            description: 'Track sign-ins, failed attempts, and suspicious activities to prevent unauthorized access',
-            date: 'Aug,12 2025',
-            bgColor: 'bg-green-700'
-        },
-        {
-            id: 7,
-            name: 'Sony',
-            logo: 'S',
-            description: 'Track sign-ins, failed attempts, and suspicious activities to prevent unauthorized access',
-            date: 'Aug,12 2025',
-            bgColor: 'bg-red-500'
+        if (!data || typeof data !== 'object') {
+          throw new Error('User profile response was empty');
         }
-    ];
 
-    return (
-        <div className="min-h-screen bg-gray-50 p-4 md:p-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Left Sidebar - User Profile */}
-                <div className="lg:col-span-1">
-                    <Button
-                        variant="ghost"
-                        className="mb-4 pl-0"
-                        onClick={() => {
-                            if (window.history.length > 1) {
-                                router.back();
-                            } else {
-                                router.push('/users');
-                            }
-                        }}
-                    >
-                        <ChevronLeft className="w-4 h-4 mr-2" />
-                        User
-                    </Button>
+        setUserDetails(data);
+        setProfileStatus('succeeded');
+      } catch (error) {
+        if (error?.name === 'AbortError') {
+          return;
+        }
 
-                    <Card className="bg-cover bg-center border-none" style={{ backgroundImage: "url('/profile-bg.png')" }}>
-                        <CardContent className="p-2 m-2">
-                            <div className="flex items-start gap-4">
-                                <Avatar className="w-16 h-16 border-4 border-white shadow-lg">
-                                    <AvatarImage src="/placeholder.svg" />
-                                    <AvatarFallback className="bg-blue-500 text-white">RM</AvatarFallback>
-                                </Avatar>
-                                <div className="flex-1">
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <h2 className="font-semibold text-gray-900">Rohan Mehta</h2>
-                                        <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                            <path d="M9.03959 1.71687C10.1285 0.650369 11.8702 0.650368 12.9591 1.71686L13.4959 2.24265C14.0122 2.74833 14.704 3.03487 15.4266 3.04237L16.178 3.05017C17.7021 3.06598 18.9337 4.29762 18.9495 5.82169L18.9573 6.57305C18.9648 7.29569 19.2513 7.98747 19.757 8.50375L20.2828 9.04056C21.3493 10.1294 21.3493 11.8712 20.2828 12.9601L19.757 13.4969C19.2513 14.0132 18.9648 14.705 18.9573 15.4276L18.9495 16.179C18.9337 17.703 17.7021 18.9347 16.178 18.9505L15.4266 18.9583C14.704 18.9658 14.0122 19.2523 13.4959 19.758L12.9591 20.2838C11.8702 21.3503 10.1285 21.3503 9.03959 20.2838L8.50278 19.758C7.98649 19.2523 7.29472 18.9658 6.57208 18.9583L5.82071 18.9505C4.29664 18.9347 3.06501 17.703 3.04919 16.179L3.04139 15.4276C3.03389 14.705 2.74735 14.0132 2.24167 13.4969L1.71589 12.9601C0.649392 11.8712 0.649391 10.1294 1.71589 9.04056L2.24167 8.50375C2.74735 7.98747 3.03389 7.29569 3.04139 6.57305L3.04919 5.82169C3.06501 4.29762 4.29664 3.06598 5.82071 3.05017L6.57208 3.04237C7.29472 3.03487 7.98649 2.74833 8.50278 2.24265L9.03959 1.71687Z" fill="#4FB2F3" />
-                                            <path d="M7.33398 10.9698L9.63397 13.3833C9.71105 13.4642 9.84693 13.4651 9.9253 13.3853L14.6673 8.55566" stroke="white" stroke-linecap="round" />
-                                        </svg>
+        setProfileStatus('failed');
+        setProfileError(error?.message || 'Failed to load user profile');
+      }
+    };
 
-                                    </div>
-                                    <div className="flex items-center gap-1 text-sm text-gray-700">
-                                        <MapPin className="w-3 h-3" />
-                                        <span>New york, North Belgium</span>
-                                    </div>
-                                    <div className="flex items-center gap-4">
-                                        <Badge className="mt-2 bg-white/80 text-gray-700 hover:bg-white/90">User</Badge>
-                                        <img src="/badge.png" alt="" className='h-8' />
-                                    </div>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
+    loadUserProfile();
 
-                    <div className="mt-6">
-                        <div className="flex items-center gap-2 mb-4">
-                            <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center">
-                                <Star className="w-4 h-4 text-gray-900" />
-                            </div>
-                            <span className="font-semibold text-gray-900">Rating Summary</span>
-                        </div>
-                        <div className="flex flex-col items-center">
-                            <div className="flex gap-1 mb-1">
-                                {[1, 2, 3, 4, 5].map((star) => (
-                                    <Star key={star} className="w-6 h-6 fill-yellow-400 text-yellow-400" />
-                                ))}
-                            </div>
-                            <p className="text-sm text-gray-500">Based on overall rating</p>
-                        </div>
-                    </div>
+    return () => controller.abort();
+  }, [userId]);
 
-                    <Card className="mt-6">
-                        <CardHeader>
-                            <CardTitle className="text-base">Details</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-3 text-sm">
-                            <div className="grid grid-cols-3 gap-2">
-                                <span className="font-medium text-gray-600">User name:</span>
-                                <span className="col-span-2 text-gray-900">Selina Kyle</span>
-                            </div>
-                            <div className="grid grid-cols-3 gap-2">
-                                <span className="font-medium text-gray-600">Email:</span>
-                                <span className="col-span-2 text-gray-900 text-xs">hena.dubrovna@kwayne.com</span>
-                            </div>
-                            <div className="grid grid-cols-3 gap-2">
-                                <span className="font-medium text-gray-600">Status:</span>
-                                <span className="col-span-2 text-green-600">active</span>
-                            </div>
-                            <div className="grid grid-cols-3 gap-2">
-                                <span className="font-medium text-gray-600">ID:</span>
-                                <div className="col-span-2 relative">
-                                    <button
-                                        type="button"
-                                        onClick={(event) => {
-                                            if (isUserIdOpen) {
-                                                setIsUserIdOpen(false);
-                                                setUserIdPopupPosition(null);
-                                                return;
-                                            }
+  useEffect(() => {
+    const controller = new AbortController();
 
-                                            setUserIdPopupPosition(
-                                                getPopupPosition(event.currentTarget.getBoundingClientRect(), 220)
-                                            );
-                                            setIsUserIdOpen(true);
-                                        }}
-                                        className="text-gray-900 transition-colors hover:text-[#4FB2F3]"
-                                    >
-                                        15265
-                                    </button>
-                                    {isUserIdOpen && userIdPopupPosition && (
-                                        <>
-                                            <button
-                                                type="button"
-                                                aria-label="Close full ID popup"
-                                                onClick={() => {
-                                                    setIsUserIdOpen(false);
-                                                    setUserIdPopupPosition(null);
-                                                }}
-                                                className="fixed inset-0 z-10 cursor-default"
-                                            />
-                                            <div
-                                                className="fixed z-20 w-max max-w-[220px] rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-700 shadow-lg"
-                                                style={userIdPopupPosition}
-                                            >
-                                                Full ID: 15265
-                                            </div>
-                                        </>
-                                    )}
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-3 gap-2">
-                                <span className="font-medium text-gray-600">Contact:</span>
-                                <span className="col-span-2 text-gray-900">(603) 555-0123</span>
-                            </div>
-                            <div className="grid grid-cols-3 gap-2">
-                                <span className="font-medium text-gray-600">Joined Date:</span>
-                                <span className="col-span-2 text-gray-900">Aug 5, 2023</span>
-                            </div>
-                            <div className="grid grid-cols-3 gap-2">
-                                <span className="font-medium text-gray-600">Language:</span>
-                                <span className="col-span-2 text-gray-900">English</span>
-                            </div>
-                            <div className="grid grid-cols-3 gap-2">
-                                <span className="font-medium text-gray-600">Country:</span>
-                                <span className="col-span-2 text-gray-900">USA</span>
-                            </div>
-                        </CardContent>
-                    </Card>
+    const loadActivityLogs = async () => {
+      if (!userId) {
+        setActivityLogStatus('failed');
+        setActivityLogError('Missing user ID');
+        return;
+      }
 
-                    <Card className="mt-6">
-                        <CardHeader>
-                            <CardTitle className="text-base">User Business</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            {['Restaurant', 'Restaurant', 'Restaurant'].map((type, idx) => (
-                                <div key={idx} className="flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                                        <Building2 className="w-5 h-5 text-gray-600" />
-                                    </div>
-                                    <div>
-                                        <div className="font-medium text-sm">Business Name</div>
-                                        <div className="text-xs text-gray-500">{type}</div>
-                                    </div>
-                                </div>
-                            ))}
-                        </CardContent>
-                    </Card>
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+      const accessToken = getAccessToken();
 
-                    <div className="flex gap-3 mt-6">
-                        <Button className="flex-1 bg-[#4FB2F3] hover:bg-[#4FB2F3]">Chat</Button>
-                        <Button variant="destructive" className="flex-1" onClick={() => setIsBanModalOpen(true)}>Ban</Button>
-                    </div>
-                </div>
+      if (!baseUrl) {
+        setActivityLogStatus('failed');
+        setActivityLogError('Missing NEXT_PUBLIC_API_BASE_URL');
+        return;
+      }
 
-                {/* Right Content - Tabs */}
-                <div className="lg:col-span-2">
-                    <Tabs value={mainTab} onValueChange={setMainTab} className="mb-6">
-                        <TabsList className="grid w-full grid-cols-2 gap-2 bg-transparent p-0">
-                            <TabsTrigger
-                                value="account"
-                                className="data-[state=active]:border-2 data-[state=active]:border-[#4FB2FE] data-[state=active]:bg-[#ECF7FE] data-[state=active]:shadow-none bg-white border border-transparent"
-                            >
-                                Activity Log
-                            </TabsTrigger>
-                            <TabsTrigger
-                                value="billing"
-                                className="data-[state=active]:border-2 data-[state=active]:border-[#4FB2FE] data-[state=active]:bg-[#ECF7FE] data-[state=active]:shadow-none bg-white border border-transparent"
-                            >
-                                Billing & Plan
-                            </TabsTrigger>
-                        </TabsList>
+      if (!accessToken) {
+        setActivityLogStatus('failed');
+        setActivityLogError('Missing access token');
+        return;
+      }
 
-                        {/* Account Tab Content */}
-                        <TabsContent value="account" className="mt-6">
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>User Activity Timeline</CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-                                        <Button
-                                            variant={activeTab === 'all' ? 'default' : 'outline'}
-                                            size="sm"
-                                            onClick={() => setActiveTab('all')}
-                                            className={activeTab === 'all' ? 'bg-[#4FB2F3] hover:bg-[#4FB2F3]' : ''}
-                                        >
-                                            All
-                                        </Button>
-                                        <Button
-                                            variant={activeTab === 'role' ? 'default' : 'outline'}
-                                            size="sm"
-                                            onClick={() => setActiveTab('role')}
-                                            className={activeTab === 'role' ? 'bg-[#4FB2F3] hover:bg-[#4FB2F3]' : ''}
-                                        >
-                                            Role Changes
-                                        </Button>
-                                        <Button
-                                            variant={activeTab === 'ai' ? 'default' : 'outline'}
-                                            size="sm"
-                                            onClick={() => setActiveTab('ai')}
-                                            className={activeTab === 'ai' ? 'bg-[#4FB2F3] hover:bg-[#4FB2F3]' : ''}
-                                        >
-                                            AI Actions
-                                        </Button>
-                                        <Button
-                                            variant={activeTab === 'tokens' ? 'default' : 'outline'}
-                                            size="sm"
-                                            onClick={() => setActiveTab('tokens')}
-                                            className={activeTab === 'tokens' ? 'bg-[#4FB2F3] hover:bg-[#4FB2F3]' : ''}
-                                        >
-                                            Tokens
-                                        </Button>
-                                        <Button
-                                            variant={activeTab === 'premium' ? 'default' : 'outline'}
-                                            size="sm"
-                                            onClick={() => setActiveTab('premium')}
-                                            className={activeTab === 'premium' ? 'bg-[#4FB2F3] hover:bg-[#4FB2F3]' : ''}
-                                        >
-                                            Premium
-                                        </Button>
-                                        <Button
-                                            variant={activeTab === 'job' ? 'default' : 'outline'}
-                                            size="sm"
-                                            onClick={() => setActiveTab('job')}
-                                            className={activeTab === 'job' ? 'bg-[#4FB2F3] hover:bg-[#4FB2F3]' : ''}
-                                        >
-                                            Job Posts
-                                        </Button>
-                                    </div>
+      setActivityLogStatus('loading');
+      setActivityLogError('');
 
-                                    <div className="space-y-3">
-                                        {activityItems
-                                            .filter(item => activeTab === 'all' || item.category === activeTab)
-                                            .map((item) => (
-                                                <div key={item.id} className="bg-blue-50 border-l-6 border-[#4FB2F3] rounded-lg p-4">
-                                                    <div className="flex justify-between items-start">
-                                                        <div className="flex-1">
-                                                            <h3 className="font-medium text-gray-900 mb-1">{item.title}</h3>
-                                                            <p className="text-sm text-gray-600">{item.description}</p>
-                                                        </div>
-                                                        <span className="text-xs text-gray-500 whitespace-nowrap ml-4">{item.date}</span>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                    </div>
-                                </CardContent>
-                            </Card>
+      try {
+        const params = new URLSearchParams({
+          userId: String(userId),
+          sort: 'createdAt:desc',
+          limit: '50',
+        });
 
-                            <Card className="mt-6">
-                                <CardHeader className="flex flex-row items-center justify-between">
-                                    <CardTitle>Referrals</CardTitle>
-                                    <Button variant="ghost" size="icon">
-                                        <Menu className="w-4 h-4" />
-                                    </Button>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full">
-                                            <thead>
-                                                <tr className="border-b">
-                                                    <th className="text-left py-3 px-4 font-medium text-gray-600">User</th>
-                                                    <th className="text-left py-3 px-4 font-medium text-gray-600">Date</th>
-                                                    <th className="text-left py-3 px-4 font-medium text-gray-600">Tokens</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {referrals.map((referral, idx) => (
-                                                    <tr key={idx} className="border-b last:border-0">
-                                                        <td className="py-3 px-4 text-sm">{referral.user}</td>
-                                                        <td className="py-3 px-4 text-sm text-gray-600">{referral.date}</td>
-                                                        <td className="py-3 px-4 text-sm">{referral.tokens}</td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        </TabsContent>
+        const response = await fetch(`${baseUrl}/activity-logs?${params.toString()}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`,
+          },
+          signal: controller.signal,
+        });
 
-                        {/* Billing & Plan Tab Content */}
-                        <TabsContent value="billing" className="mt-6">
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle>Current Plan</CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="space-y-4">
-                                        <div>
-                                            <p className="text-sm font-medium mb-1">Current Plan is free</p>
-                                            <p className="text-sm text-gray-600">
-                                                <span className="font-medium">Active :</span> July 25, 2025 till August 1, 2025
-                                            </p>
-                                        </div>
+        const payload = await response.json().catch(() => null);
 
-                                        <div>
-                                            <div className="flex justify-between text-sm mb-2">
-                                                <span className="text-gray-600">Days</span>
-                                                <span className="font-medium">7 of 5 Days</span>
-                                            </div>
-                                            <Progress value={71.4} className="h-2" />
-                                        </div>
-                                    </CardContent>
-                                </Card>
+        if (!response.ok || payload?.success === false) {
+          throw new Error(payload?.message || 'Failed to load activity logs');
+        }
 
-                                <Alert className="bg-orange-50 border-orange-200">
-                                    <AlertDescription>
-                                        <p className="font-semibold text-orange-700 mb-1">We need your attention!</p>
-                                        <p className="text-sm text-orange-600">This plan requires update</p>
-                                    </AlertDescription>
-                                </Alert>
-                            </div>
-                        </TabsContent>
+        const rawLogs =
+          payload?.data?.logs ||
+          payload?.data?.items ||
+          payload?.data?.results ||
+          payload?.data?.docs ||
+          payload?.data ||
+          payload?.logs ||
+          payload?.items ||
+          payload?.results ||
+          payload;
 
-                    </Tabs>
-                </div>
-            </div>
-            <BanUserModal
-                open={isBanModalOpen}
-                onOpenChange={setIsBanModalOpen}
-                userName="Rohan Mehta"
-            />
-        </div>
+        const logs = Array.isArray(rawLogs) ? rawLogs : [];
+
+        setActivityLogs(logs.map(mapActivityLogItem));
+        setActivityLogStatus('succeeded');
+      } catch (error) {
+        if (error?.name === 'AbortError') {
+          return;
+        }
+
+        setActivityLogStatus('failed');
+        setActivityLogError(error?.message || 'Failed to load activity logs');
+      }
+    };
+
+    loadActivityLogs();
+
+    return () => controller.abort();
+  }, [userId]);
+
+  const profile = useMemo(() => {
+    const data = userDetails || {};
+    const fullName = pickFirst(data.name, data.fullName, data.username, data.displayName);
+    const email = pickFirst(data.email, data.emailAddress);
+    const phone = pickFirst(
+      [data.countryCode, data.phoneNumber].filter(Boolean).join(' '),
+      data.phone,
+      data.mobile,
+      data.contactNumber
     );
+    const country = pickFirst(data.country, data.countryName, data.location?.country, data.address?.country);
+    const city = pickFirst(data.city, data.location?.city, data.address?.city);
+    const state = pickFirst(data.state, data.location?.state, data.address?.state);
+    const location = pickFirst(
+      [city, state, country].filter(Boolean).join(', '),
+      data.address?.address,
+      data.locationName,
+      data.addressLine
+    );
+    const roleLabel = pickFirst(data.role, data.userType);
+    const joinedDate = formatDate(pickFirst(data.createdAt, data.joinedAt, data.joinDate), '');
+    const statusRaw = pickFirst(
+      data.status,
+      typeof data.isActive === 'boolean' ? (data.isActive ? 'Active' : 'Inactive') : '',
+      typeof data.isDeleted === 'boolean' ? (data.isDeleted ? 'Deleted' : '') : ''
+    );
+    const statusLabel = typeof statusRaw === 'string' ? statusRaw : String(statusRaw);
+    const language = pickFirst(data.appSettings?.language, data.language, data.locale);
+    const identifier = pickFirst(data.id, data._id, userId);
+    const isPremium =
+      data.isPremium === true ||
+      data.isPremium === 'true' ||
+      data.plan === 'Premium' ||
+      data.subscription?.plan === 'Premium' ||
+      data.subscriptions?.some((subscription) => subscription?.status === 'active');
+    const activeSubscription =
+      toArray(data.subscriptions).find((subscription) => subscription?.status === 'active') ||
+      data.subscription ||
+      null;
+    const currentPlan = isPremium
+      ? pickFirst(
+          activeSubscription?.plan?.tier ? toTitleCase(activeSubscription.plan.tier) : '',
+          data.plan,
+          data.subscription?.plan,
+          data.currentPlan
+        )
+      : pickFirst(data.plan, data.subscription?.plan, data.currentPlan);
+    const planStarted = formatDate(
+      pickFirst(activeSubscription?.startDate, data.subscription?.startDate, data.planStartDate),
+      ''
+    );
+    const planEnds = formatDate(
+      pickFirst(activeSubscription?.endDate, data.subscription?.endDate, data.planEndDate),
+      ''
+    );
+    const ownedBusinesses = toArray(data.ownedBusinesses).map((business) => ({
+      id: pickFirst(business?.id, business?._id),
+      name: pickFirst(business?.name, business?.businessName),
+      type: getBusinessTypeLabel(business, null),
+      logo: pickFirst(business?.logo, business?.image, business?.coverPhoto),
+    }));
+    const employmentBusinesses = toArray(data.employments)
+      .map((employment) => {
+        const business = employment?.business;
+
+        if (!business || typeof business !== 'object') {
+          return null;
+        }
+
+        return {
+          id: pickFirst(business?.id, business?._id),
+          name: pickFirst(business?.name, business?.businessName),
+          type: getBusinessTypeLabel(business, employment),
+          logo: pickFirst(business?.logo, business?.image, business?.coverPhoto),
+        };
+      })
+      .filter(Boolean);
+    const businesses = [...ownedBusinesses, ...employmentBusinesses].filter(
+      (business, index, items) =>
+        business?.id &&
+        items.findIndex((candidate) => candidate?.id === business.id) === index
+    );
+    const referrals = toArray(
+      pickFirst(
+        data.referrals,
+        data.referralHistory,
+        data.referralLogs,
+        data.referralRewards,
+        data.referralEarnings
+      )
+    )
+      .map((referral, index) => ({
+        id: pickFirst(referral?.id, referral?._id, `${index}`),
+        user: pickFirst(
+          referral?.user?.name,
+          referral?.referredUser?.name,
+          referral?.invitee?.name,
+          referral?.name
+        ),
+        date: formatDate(
+          pickFirst(
+            referral?.earnedAt,
+            referral?.createdAt,
+            referral?.updatedAt,
+            referral?.date
+          ),
+          ''
+        ),
+        tokens: pickFirst(
+          referral?.tokens,
+          referral?.coins,
+          referral?.rewardAmount,
+          referral?.amount
+        ),
+      }))
+      .filter((referral) => hasValue(referral.user) || hasValue(referral.date) || hasValue(referral.tokens));
+    const badges = Array.isArray(data.appearance?.badges)
+      ? data.appearance.badges
+      : Array.isArray(data.badges)
+        ? data.badges
+        : [];
+    const equippedBadge =
+      badges
+        .filter((badge) => badge?.isEquipped)
+        .sort((first, second) => (first?.equippedSlot ?? Number.MAX_SAFE_INTEGER) - (second?.equippedSlot ?? Number.MAX_SAFE_INTEGER))[0] ||
+      badges[0] ||
+      null;
+    const badgeTier = String(pickFirst(equippedBadge?.tier, '')).toLowerCase();
+    const rating = Number.isFinite(Number(data.rating)) ? Number(data.rating) : 0;
+    const nameplate = data.appearance?.nameplate;
+    const nameplateBorder = nameplate?.metadata?.border;
+    const nameplateBackground = nameplate?.metadata?.background;
+    const nameplateElement = nameplate?.metadata?.element;
+
+    return {
+      fullName,
+      email,
+      phone,
+      country,
+      location,
+      roleLabel,
+      joinedDate,
+      statusLabel,
+      language,
+      identifier,
+      currentPlan,
+      planStarted,
+      planEnds,
+      rating,
+      businesses,
+      referrals,
+      badgeTier,
+      nameplateBorder,
+      nameplateBackground,
+      nameplateElement,
+    };
+  }, [userDetails, userId]);
+
+  const statusTone = profile.statusLabel.toLowerCase();
+  const statusClassName = statusTone.includes('active')
+    ? 'text-green-600'
+    : statusTone.includes('ban') || statusTone.includes('delete') || statusTone.includes('inactive')
+      ? 'text-red-600'
+      : 'text-gray-900';
+  const filteredActivityLogs = activityLogs.filter(
+    (item) => activeTab === 'all' || item.category === activeTab
+  );
+  const profileCardStyle = {
+    background: buildGradientBackground(profile.nameplateBackground),
+    borderColor: profile.nameplateBorder?.color || '#89BC94',
+    borderTopWidth: `${profile.nameplateBorder?.width?.top ?? 1}px`,
+    borderLeftWidth: `${profile.nameplateBorder?.width?.left ?? 1}px`,
+    borderRightWidth: `${profile.nameplateBorder?.width?.right ?? 1}px`,
+    borderBottomWidth: `${profile.nameplateBorder?.width?.bottom ?? 1}px`,
+    borderRadius: `${profile.nameplateBorder?.radius ?? 16}px`,
+  };
+  const nameplateIcon = profile.nameplateElement?.icon;
+  const nameplateOverlays = Array.isArray(profile.nameplateElement?.overlays)
+    ? profile.nameplateElement.overlays
+    : [];
+  const equippedBadgeImage = BADGE_TIER_IMAGE_MAP[profile.badgeTier] || '/badge.png';
+  const nameplateBorderColor = profile.nameplateBorder?.color || '#89BC94';
+
+  return (
+    <div className="min-h-screen bg-gray-50 p-4 md:p-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-1">
+          <Button
+            variant="ghost"
+            className="mb-4 pl-0"
+            onClick={() => {
+              if (window.history.length > 1) {
+                router.back();
+              } else {
+                router.push('/users');
+              }
+            }}
+          >
+            <ChevronLeft className="mr-2 h-4 w-4" />
+            User
+          </Button>
+
+          {profileStatus === 'failed' ? (
+            <Alert className="mb-6 border-red-200 bg-red-50">
+              <AlertDescription className="text-red-700">{profileError}</AlertDescription>
+            </Alert>
+          ) : null}
+
+          <Card className="overflow-hidden rounded-xl border border-[#EBEBEB] bg-[#F9FAFB] shadow-[0_1px_4px_rgba(0,0,0,0.05),0_6px_24px_rgba(0,0,0,0.04)]">
+            <CardContent className="space-y-4 p-[18px]">
+              <div
+                className="relative overflow-hidden border border-solid shadow-none"
+                style={profileCardStyle}
+              >
+                {nameplateOverlays.map((overlay, index) => (
+                  <img
+                    key={pickFirst(overlay?.url, `${index}`)}
+                    src={overlay?.url}
+                    alt=""
+                    className="pointer-events-none absolute z-0 object-contain"
+                    style={{
+                      ...getSizeStyle(overlay?.size),
+                      ...getPositionStyle(overlay?.position),
+                    }}
+                  />
+                ))}
+                {nameplateIcon?.url ? (
+                  <img
+                    src={nameplateIcon.url}
+                    alt=""
+                    className="pointer-events-none absolute z-10 object-contain"
+                    style={{
+                      ...getSizeStyle(nameplateIcon?.size),
+                      ...getPositionStyle(nameplateIcon?.position),
+                    }}
+                  />
+                ) : null}
+                <div className="flex min-h-[115px] items-center gap-[10px] px-[10px] py-[12px]">
+                  <Avatar
+                    className="relative z-20 h-[90px] w-[90px] shrink-0 rounded-full border-[2px] bg-white shadow-[0_6px_24px_rgba(0,0,0,0.04),0_1px_4px_rgba(0,0,0,0.05)]"
+                    style={{ borderColor: nameplateBorderColor }}
+                  >
+                    <AvatarImage
+                      className="object-cover"
+                      src={pickFirst(
+                        userDetails?.avatar,
+                        userDetails?.image,
+                        userDetails?.photoUrl,
+                        '/placeholder.svg'
+                      )}
+                    />
+                    <AvatarFallback className="bg-[#4FB2F3] text-lg font-semibold text-white">
+                      {getInitials(profile.fullName || userDetails?.email || userId)}
+                    </AvatarFallback>
+                  </Avatar>
+
+                  <div className="relative z-20 flex min-w-0 flex-1 flex-col gap-2">
+                    <div className="flex flex-col gap-[7px]">
+                      <div className="flex items-center gap-[5px]">
+                        <h2 className="truncate text-base font-normal leading-6 text-[#11293A]">
+                          {profile.fullName}
+                        </h2>
+                        <BadgeCheck className="h-[22px] w-[22px] shrink-0 fill-[#4FB2F3] text-[#4FB2F3]" />
+                      </div>
+
+                      {hasValue(profile.location) ? (
+                        <div className="flex items-center gap-[5px] text-[#11293A]">
+                          <MapPin className="h-5 w-5 shrink-0 stroke-[1.8]" />
+                          <span className="truncate text-sm font-normal leading-5">
+                            {profile.location}
+                          </span>
+                        </div>
+                      ) : null}
+                    </div>
+
+                    {hasValue(profile.roleLabel) || profile.badgeTier ? (
+                      <div className="flex items-center gap-2">
+                        {hasValue(profile.roleLabel) ? (
+                          <div
+                            className="rounded-[8px] border bg-white/50 px-3 py-1 text-sm font-semibold leading-5 text-[#11293A] shadow-[inset_0_1px_1px_rgba(0,0,0,0.04),0_1px_4px_rgba(0,0,0,0.05),0_6px_24px_rgba(0,0,0,0.04)]"
+                            style={{ borderColor: nameplateBorderColor }}
+                          >
+                            {profile.roleLabel}
+                          </div>
+                        ) : null}
+                        {profile.badgeTier ? (
+                          <img src={equippedBadgeImage} alt="" className="h-[34px] w-auto shrink-0" />
+                        ) : null}
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-col items-start gap-[7px]">
+                  <div className="flex items-center gap-[9px]">
+                    <div className="flex h-[30px] w-[30px] items-center justify-center rounded-full bg-[#E5F4FD]">
+                      <Star className="h-5 w-5 text-[#11293A]" />
+                    </div>
+                    <span className="text-sm font-semibold leading-5 text-[#111111]">Rating Summary</span>
+                  </div>
+                  <div className="w-full">
+                    <div className="flex items-center justify-center gap-1">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star
+                          key={star}
+                          className={
+                            star <= Math.round(profile.rating)
+                              ? 'h-6 w-6 fill-[#F1C400] text-[#F1C400]'
+                              : 'h-6 w-6 fill-transparent text-[#D1D5DB]'
+                          }
+                        />
+                      ))}
+                    </div>
+                    {hasValue(profile.rating) ? (
+                      <p className="mt-[7px] text-center text-sm font-normal leading-5 text-[#7A7A7A]">
+                        Based on {profile.rating} overall rating
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-4">
+                  <h3 className="text-[18px] font-semibold leading-7 text-black">Details</h3>
+                  <div className="border-t border-[#EBEBEB]" />
+                  <div className="space-y-2 text-sm leading-5">
+                    {hasValue(profile.fullName) ? (
+                      <div className="flex items-start gap-2">
+                        <span className="font-semibold text-black">User name:</span>
+                        <span className="text-[#7A7A7A]">{profile.fullName}</span>
+                      </div>
+                    ) : null}
+                    {hasValue(profile.email) ? (
+                      <div className="flex items-start gap-2">
+                        <span className="font-semibold text-[#11293A]">Email:</span>
+                        <span className="min-w-0 break-all text-[#7A7A7A]">{profile.email}</span>
+                      </div>
+                    ) : null}
+                    {hasValue(profile.statusLabel) ? (
+                      <div className="flex items-start gap-2">
+                        <span className="font-semibold text-[#11293A]">Status:</span>
+                        <span className={statusClassName === 'text-green-600' ? 'text-[#7A7A7A]' : statusClassName}>
+                          {profile.statusLabel}
+                        </span>
+                      </div>
+                    ) : null}
+                    {hasValue(profile.identifier) ? (
+                      <div className="flex items-start gap-2">
+                        <span className="font-semibold text-black">ID:</span>
+                        <div className="relative min-w-0">
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              if (isUserIdOpen) {
+                                setIsUserIdOpen(false);
+                                setUserIdPopupPosition(null);
+                                return;
+                              }
+
+                              setUserIdPopupPosition(
+                                getPopupPosition(event.currentTarget.getBoundingClientRect(), 220)
+                              );
+                              setIsUserIdOpen(true);
+                            }}
+                            className="text-left text-[#7A7A7A] transition-colors hover:text-[#4FB2F3]"
+                          >
+                            {profile.identifier}
+                          </button>
+                          {isUserIdOpen && userIdPopupPosition ? (
+                            <>
+                              <button
+                                type="button"
+                                aria-label="Close full ID popup"
+                                onClick={() => {
+                                  setIsUserIdOpen(false);
+                                  setUserIdPopupPosition(null);
+                                }}
+                                className="fixed inset-0 z-10 cursor-default"
+                              />
+                              <div
+                                className="fixed z-20 max-w-[220px] rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-700 shadow-lg"
+                                style={userIdPopupPosition}
+                              >
+                                Full ID: {profile.identifier}
+                              </div>
+                            </>
+                          ) : null}
+                        </div>
+                      </div>
+                    ) : null}
+                    {hasValue(profile.phone) ? (
+                      <div className="flex items-start gap-2">
+                        <span className="font-semibold text-black">Contact:</span>
+                        <span className="text-[#7A7A7A]">{profile.phone}</span>
+                      </div>
+                    ) : null}
+                    {hasValue(profile.joinedDate) ? (
+                      <div className="flex items-start gap-2">
+                        <span className="font-semibold text-black">Joined Date :</span>
+                        <span className="text-[#7A7A7A]">{profile.joinedDate}</span>
+                      </div>
+                    ) : null}
+                    {hasValue(profile.language) ? (
+                      <div className="flex items-start gap-2">
+                        <span className="font-semibold text-black">Language:</span>
+                        <span className="text-[#7A7A7A]">{profile.language}</span>
+                      </div>
+                    ) : null}
+                    {hasValue(profile.country) ? (
+                      <div className="flex items-start gap-2">
+                        <span className="font-semibold text-black">Country:</span>
+                        <span className="text-[#7A7A7A]">{profile.country}</span>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+
+                <div className="border-t border-[#EBEBEB]" />
+
+                <div className="flex flex-col gap-4">
+                  <h3 className="text-sm font-bold leading-6 text-[#11293A]">User Business</h3>
+                  <div className="space-y-2">
+                    {profile.businesses.length ? (
+                      profile.businesses.map((business) => (
+                        <div
+                          key={business.id}
+                          className="relative flex h-11 items-center gap-2 rounded-[12px] border border-[#EBEBEB] bg-white px-3 py-[6px] shadow-[inset_0_1px_1px_rgba(0,0,0,0.04),0_1px_4px_rgba(0,0,0,0.05),0_6px_24px_rgba(0,0,0,0.04)]"
+                        >
+                          <img
+                            src={business.logo || '/BProfile.png'}
+                            alt=""
+                            className="h-8 w-8 shrink-0 rounded-full object-cover"
+                          />
+                          <div className="min-w-0 text-[#11293A]">
+                            {hasValue(business.name) ? (
+                              <div className="truncate text-sm font-semibold leading-5">{business.name}</div>
+                            ) : null}
+                            {hasValue(business.type) ? (
+                              <div className="truncate text-xs font-normal leading-4">{business.type}</div>
+                            ) : null}
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-[#7A7A7A]">No businesses found.</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-center gap-3 pt-12">
+                <Button className="h-8 roun  ded-[8px] bg-[#4FB2F3] px-4 py-1 text-sm font-normal text-white hover:bg-[#4FB2F3]">
+                  Chat
+                </Button>
+                <Button
+                  variant="destructive"
+                  className="h-8 rounded-[8px] bg-[#F34F4F] px-4 py-1 text-sm font-normal text-white hover:bg-[#F34F4F]"
+                  onClick={() => setIsBanModalOpen(true)}
+                >
+                  Ban
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="lg:col-span-2">
+          {profileStatus === 'loading' ? (
+            <p className="mb-4 text-sm text-gray-500">Loading user profile...</p>
+          ) : null}
+
+          <Tabs value={mainTab} onValueChange={setMainTab} className="mb-6">
+            <TabsList className="grid w-full grid-cols-2 gap-2 bg-transparent p-0">
+              <TabsTrigger
+                value="billing"
+                className="border border-transparent bg-white data-[state=active]:border-2 data-[state=active]:border-[#4FB2FE] data-[state=active]:bg-[#ECF7FE] data-[state=active]:shadow-none"
+              >
+                Billing & Plan
+              </TabsTrigger>
+              <TabsTrigger
+                value="account"
+                className="border border-transparent bg-white data-[state=active]:border-2 data-[state=active]:border-[#4FB2FE] data-[state=active]:bg-[#ECF7FE] data-[state=active]:shadow-none"
+              >
+                Activity Log
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="account" className="mt-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>User Activity Timeline</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="mb-6 flex gap-2 overflow-x-auto pb-2">
+                    <Button
+                      variant={activeTab === 'all' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setActiveTab('all')}
+                      className={activeTab === 'all' ? 'bg-[#4FB2F3] hover:bg-[#4FB2F3]' : ''}
+                    >
+                      All
+                    </Button>
+                    <Button
+                      variant={activeTab === 'role' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setActiveTab('role')}
+                      className={activeTab === 'role' ? 'bg-[#4FB2F3] hover:bg-[#4FB2F3]' : ''}
+                    >
+                      Role Changes
+                    </Button>
+                    <Button
+                      variant={activeTab === 'ai' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setActiveTab('ai')}
+                      className={activeTab === 'ai' ? 'bg-[#4FB2F3] hover:bg-[#4FB2F3]' : ''}
+                    >
+                      AI Actions
+                    </Button>
+                    <Button
+                      variant={activeTab === 'tokens' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setActiveTab('tokens')}
+                      className={activeTab === 'tokens' ? 'bg-[#4FB2F3] hover:bg-[#4FB2F3]' : ''}
+                    >
+                      Tokens
+                    </Button>
+                    <Button
+                      variant={activeTab === 'premium' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setActiveTab('premium')}
+                      className={activeTab === 'premium' ? 'bg-[#4FB2F3] hover:bg-[#4FB2F3]' : ''}
+                    >
+                      Premium
+                    </Button>
+                    <Button
+                      variant={activeTab === 'job' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setActiveTab('job')}
+                      className={activeTab === 'job' ? 'bg-[#4FB2F3] hover:bg-[#4FB2F3]' : ''}
+                    >
+                      Job Posts
+                    </Button>
+                  </div>
+
+                  {activityLogStatus === 'loading' ? (
+                    <p className="mb-4 text-sm text-gray-500">Loading activity logs...</p>
+                  ) : null}
+                  {activityLogStatus === 'failed' ? (
+                    <p className="mb-4 text-sm text-red-500">{activityLogError}</p>
+                  ) : null}
+
+                  <div className="space-y-3">
+                    {filteredActivityLogs.length ? (
+                      filteredActivityLogs.map((item) => (
+                        <div key={item.id} className="rounded-lg border-l-4 border-[#4FB2F3] bg-blue-50 p-4">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <h3 className="mb-1 font-medium text-gray-900">{item.title}</h3>
+                              <p className="text-sm text-gray-600">{item.description}</p>
+                            </div>
+                            <span className="ml-4 whitespace-nowrap text-xs text-gray-500">{item.date}</span>
+                          </div>
+                        </div>
+                      ))
+                    ) : activityLogStatus === 'succeeded' ? (
+                      <p className="text-sm text-gray-500">No activity logs found.</p>
+                    ) : null}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="mt-6">
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle>Referrals</CardTitle>
+                  <Button variant="ghost" size="icon">
+                    <Menu className="h-4 w-4" />
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="px-4 py-3 text-left font-medium text-gray-600">User</th>
+                          <th className="px-4 py-3 text-left font-medium text-gray-600">Date</th>
+                          <th className="px-4 py-3 text-left font-medium text-gray-600">Tokens</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {profile.referrals.length ? (
+                          profile.referrals.map((referral) => (
+                            <tr key={referral.id} className="border-b last:border-0">
+                              <td className="px-4 py-3 text-sm">{referral.user || 'N/A'}</td>
+                              <td className="px-4 py-3 text-sm text-gray-600">{referral.date || 'N/A'}</td>
+                              <td className="px-4 py-3 text-sm">{hasValue(referral.tokens) ? referral.tokens : 'N/A'}</td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td className="px-4 py-3 text-sm text-gray-500" colSpan={3}>
+                              N/A
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="billing" className="mt-6">
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Current Plan</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <p className="mb-1 text-sm font-medium">Current Plan is {profile.currentPlan}</p>
+                      <p className="text-sm text-gray-600">
+                        <span className="font-medium">Active :</span> {profile.planStarted} till {profile.planEnds}
+                      </p>
+                    </div>
+
+                  </CardContent>
+                </Card>
+
+                <Alert className="border-orange-200 bg-orange-50">
+                  <AlertDescription>
+                    <p className="mb-1 font-semibold text-orange-700">We need your attention!</p>
+                    <p className="text-sm text-orange-600">This plan requires update</p>
+                  </AlertDescription>
+                </Alert>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
+      </div>
+
+      <BanUserModal
+        open={isBanModalOpen}
+        onOpenChange={setIsBanModalOpen}
+        userName={profile.fullName}
+      />
+    </div>
+  );
 }

@@ -17,7 +17,7 @@ import {
 import BanBusinessModal from '@/components/modals/BanBusinessModal';
 
 const BusinessProfile = ({ business, onBack }) => {
-  const [activeTab, setActiveTab] = useState('account');
+  const [activeTab, setActiveTab] = useState('billing');
   const [isBanModalOpen, setIsBanModalOpen] = useState(false);
 
   const activities = [
@@ -264,15 +264,6 @@ const BusinessProfile = ({ business, onBack }) => {
             <div className="border-b">
               <div className="flex space-x-1 p-1">
                 <button
-                  onClick={() => setActiveTab('account')}
-                  className={`px-6 py-3 text-sm font-medium rounded-lg ${activeTab === 'account'
-                    ? 'bg-[#ECF7FE] text-gray-900 border-2 border-[#4FB2FE]'
-                    : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                >
-                  Account
-                </button>
-                <button
                   onClick={() => setActiveTab('billing')}
                   className={`px-6 py-3 text-sm font-medium rounded-lg ${activeTab === 'billing'
                     ? 'bg-[#ECF7FE] text-gray-900 border-2 border-[#4FB2FE]'
@@ -282,8 +273,8 @@ const BusinessProfile = ({ business, onBack }) => {
                   Billing & Plan
                 </button>
                 <button
-                  onClick={() => setActiveTab('activity')}
-                  className={`px-6 py-3 text-sm font-medium rounded-lg ${activeTab === 'activity'
+                  onClick={() => setActiveTab('account')}
+                  className={`px-6 py-3 text-sm font-medium rounded-lg ${activeTab === 'account'
                     ? 'bg-[#ECF7FE] text-gray-900 border-2 border-[#4FB2FE]'
                     : 'text-gray-600 hover:text-gray-900'
                     }`}
@@ -443,28 +434,6 @@ const BusinessProfile = ({ business, onBack }) => {
                 </div>
               )}
 
-              {/* Activity Log Tab */}
-              {activeTab === 'activity' && (
-                <div>
-                  <h2 className="text-xl font-semibold mb-6">User Activity</h2>
-                  <div className="space-y-3">
-                    {activityLogs.map((log, index) => (
-                      <div key={index} className="border rounded-lg p-4">
-                        <div className="flex items-start space-x-3">
-                          <img src="/Ellipse1.png" alt={log.name} className="w-10 h-10 rounded-full object-cover" />
-                          <div className="flex-1">
-                            <div className="flex items-start justify-between mb-1">
-                              <h3 className="font-medium text-gray-900">{log.name}</h3>
-                              <span className="text-xs text-gray-500">{log.date}</span>
-                            </div>
-                            <p className="text-sm text-gray-600">{log.action}</p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </CardContent>
           </Card>
         </div>
