@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -82,6 +83,7 @@ const getInitials = (name) => {
 
 const ChatMessagingInterface = () => {
   const dispatch = useDispatch();
+  const searchParams = useSearchParams();
   const {
     chats,
     pagination,
@@ -103,6 +105,7 @@ const ChatMessagingInterface = () => {
   const [socketStatus, setSocketStatus] = useState("disconnected");
   const messagesEndRef = useRef(null);
   const socketRef = useRef(null);
+  const requestedChatId = searchParams.get("chatId");
 
   useEffect(() => {
     dispatch(fetchSupportChats({ page: 1, limit: 20 }));
@@ -170,6 +173,14 @@ const ChatMessagingInterface = () => {
   }, [activeChatId, dispatch]);
 
   useEffect(() => {
+    if (!requestedChatId || activeChatId === requestedChatId) {
+      return;
+    }
+
+    dispatch(setActiveChat(requestedChatId));
+  }, [activeChatId, dispatch, requestedChatId]);
+
+  useEffect(() => {
     return () => {
       disconnectChatSocket();
     };
@@ -196,9 +207,9 @@ const ChatMessagingInterface = () => {
     null;
 
   const activeChat =
-    activeChatDetails?.id === selectedListChat?.id
+    activeChatDetails?.id === activeChatId
       ? {
-          ...selectedListChat,
+          ...(selectedListChat || {}),
           ...activeChatDetails,
           stats: activeChatDetails?.stats,
           participants: activeChatDetails?.participants,

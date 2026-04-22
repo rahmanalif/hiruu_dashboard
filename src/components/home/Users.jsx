@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -26,6 +27,21 @@ const truncateUserId = (userId) => {
   }
 
   return `${userId.slice(0, 8)}...${userId.slice(-4)}`;
+};
+
+const pickFirst = (...values) => values.find((value) => typeof value === 'string' && value.trim());
+
+const getInitials = (name) => {
+  if (!name) {
+    return 'U';
+  }
+
+  return name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() || '')
+    .join('') || 'U';
 };
 
 const getPopupPosition = (triggerRect, popupWidth) => {
@@ -105,6 +121,7 @@ const UserManagement = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-24 text-left">User ID</TableHead>
+                  <TableHead className="w-48 text-left">Profile Image</TableHead>
                   <TableHead>User Name</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Plan</TableHead>
@@ -114,13 +131,13 @@ const UserManagement = () => {
               <TableBody>
                 {status === 'loading' ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-gray-500">
+                    <TableCell colSpan={6} className="text-center text-gray-500">
                       Loading users...
                     </TableCell>
                   </TableRow>
                 ) : error ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-red-500">
+                    <TableCell colSpan={6} className="text-center text-red-500">
                       {error}
                     </TableCell>
                   </TableRow>
@@ -171,6 +188,17 @@ const UserManagement = () => {
                           ) : null}
                         </div>
                       </TableCell>
+                      <TableCell className="text-gray-900">
+                        <Avatar className="h-9 w-9 border border-gray-200">
+                          <AvatarImage
+                            src={pickFirst(user.avatar, user.image, user.photoUrl, user.photo)}
+                            alt={user.name || 'User photo'}
+                          />
+                          <AvatarFallback className="bg-gray-100 text-xs font-medium text-gray-700">
+                            {getInitials(user.name)}
+                          </AvatarFallback>
+                        </Avatar>
+                      </TableCell>
                       <TableCell className="text-gray-900">{user.name || 'N/A'}</TableCell>
                       <TableCell className="text-gray-600">{user.email || 'N/A'}</TableCell>
                       <TableCell className="text-gray-900">
@@ -191,7 +219,7 @@ const UserManagement = () => {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-gray-500">
+                    <TableCell colSpan={6} className="text-center text-gray-500">
                       No users found.
                     </TableCell>
                   </TableRow>

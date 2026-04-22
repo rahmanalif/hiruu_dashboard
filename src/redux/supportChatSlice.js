@@ -6,6 +6,8 @@ const initialState = {
   pagination: null,
   status: "idle",
   error: null,
+  createStatus: "idle",
+  createError: null,
   activeChatId: null,
   activeChatDetails: null,
   detailsStatus: "idle",
@@ -143,6 +145,52 @@ export const fetchSupportChatDetails = createAsyncThunk(
       return rejectWithValue(
         payload?.message || "Failed to load support chat details"
       );
+    }
+
+    return payload?.data || null;
+  }
+);
+
+export const createSupportChat = createAsyncThunk(
+  "supportChats/createSupportChat",
+  async (userId, { getState, rejectWithValue }) => {
+    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+    if (!baseUrl) {
+      return rejectWithValue("Missing NEXT_PUBLIC_API_BASE_URL");
+    }
+
+    if (!userId) {
+      return rejectWithValue("Missing user id");
+    }
+
+    const accessToken = getAccessToken(getState());
+    if (!accessToken) {
+      return rejectWithValue("Missing access token");
+    }
+
+    let response;
+    try {
+      response = await fetch(`${baseUrl}/admin/support/chats`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ userId }),
+      });
+    } catch (error) {
+      return rejectWithValue(error?.message || "Network error");
+    }
+
+    let payload = null;
+    try {
+      payload = await response.json();
+    } catch {
+      payload = null;
+    }
+
+    if (!response.ok || !payload?.success) {
+      return rejectWithValue(payload?.message || "Failed to create support chat");
     }
 
     return payload?.data || null;
@@ -381,6 +429,37 @@ const supportChatSlice = createSlice({
       .addCase(fetchSupportChats.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.payload || "Failed to load support chats";
+      })
+      .addCase(createSupportChat.pending, (state) => {
+        state.createStatus = "loading";
+        state.createError = null;
+      })
+      .addCase(createSupportChat.fulfilled, (state, action) => {
+        state.createStatus = "succeeded";
+        state.createError = null;
+
+        if (!action.payload?.id) {
+          return;
+        }
+
+        const nextChat = action.payload;
+        const existingIndex = state.chats.findIndex((chat) => chat.id === nextChat.id);
+
+        if (existingIndex >= 0) {
+          state.chats[existingIndex] = {
+            ...state.chats[existingIndex],
+            ...nextChat,
+          };
+        } else {
+          state.chats = [nextChat, ...state.chats];
+        }
+
+        state.activeChatId = nextChat.id;
+        state.activeChatDetails = nextChat;
+      })
+      .addCase(createSupportChat.rejected, (state, action) => {
+        state.createStatus = "failed";
+        state.createError = action.payload || "Failed to create support chat";
       })
       .addCase(fetchSupportChatDetails.pending, (state) => {
         state.detailsStatus = "loading";

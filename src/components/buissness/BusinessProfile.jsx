@@ -349,7 +349,7 @@ const BusinessProfile = ({ business, onBack }) => {
                   </Card>
 
                   {/* Billing Address */}
-                  <Card>
+                  {/* <Card>
                     <CardContent className="p-6">
                       <div className="flex items-start justify-between mb-6">
                         <h3 className="font-semibold">Billing Address</h3>
@@ -402,10 +402,10 @@ const BusinessProfile = ({ business, onBack }) => {
                         </div>
                       </div>
                     </CardContent>
-                  </Card>
+                  </Card> */}
 
                   {/* Business Info */}
-                  <Card>
+                  {/* <Card>
                     <CardContent className="p-4">
                       <div className="flex items-start space-x-4 mb-6 bg-[#ECF7FE] rounded-3xl px-8 py-6">
                         <div className="w-16 h-16 rounded-full flex items-center justify-center text-white text-2xl font-bold">
@@ -430,7 +430,7 @@ const BusinessProfile = ({ business, onBack }) => {
                         </div>
                       </div>
                     </CardContent>
-                  </Card>
+                  </Card> */}
                 </div>
               )}
 

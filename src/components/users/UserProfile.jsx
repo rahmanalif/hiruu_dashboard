@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useDispatch } from 'react-redux';
 import { ChevronLeft, Star, MapPin, Menu, BadgeCheck } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import BanUserModal from '@/components/modals/BanUserModal';
 import { readStoredAuth, resolveAccessToken } from '@/lib/auth';
+import { createSupportChat, fetchSupportChats, setActiveChat } from '@/redux/supportChatSlice';
 
 const getAccessToken = () => resolveAccessToken(readStoredAuth()?.tokens);
 
@@ -221,6 +223,7 @@ const getBusinessTypeLabel = (business, employment) =>
   );
 
 export default function UserProfileActivity({ userId }) {
+  const dispatch = useDispatch();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('all');
   const [mainTab, setMainTab] = useState('billing');
@@ -233,6 +236,11 @@ export default function UserProfileActivity({ userId }) {
   const [activityLogStatus, setActivityLogStatus] = useState('idle');
   const [activityLogError, setActivityLogError] = useState('');
   const [activityLogs, setActivityLogs] = useState([]);
+  const [chatLaunchStatus, setChatLaunchStatus] = useState('idle');
+  const [chatLaunchError, setChatLaunchError] = useState('');
+  const [restrictionStatus, setRestrictionStatus] = useState('idle');
+  const [restrictionError, setRestrictionError] = useState('');
+  const [profileRefreshKey, setProfileRefreshKey] = useState(0);
 
   useEffect(() => {
     const handleViewportChange = () => {
@@ -320,7 +328,7 @@ export default function UserProfileActivity({ userId }) {
     loadUserProfile();
 
     return () => controller.abort();
-  }, [userId]);
+  }, [userId, profileRefreshKey]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -429,6 +437,13 @@ export default function UserProfileActivity({ userId }) {
       typeof data.isDeleted === 'boolean' ? (data.isDeleted ? 'Deleted' : '') : ''
     );
     const statusLabel = typeof statusRaw === 'string' ? statusRaw : String(statusRaw);
+    const isRestricted =
+      data.isRestricted === true ||
+      data.isRestricted === 'true' ||
+      data.restricted === true ||
+      data.restricted === 'true' ||
+      String(statusRaw).toLowerCase().includes('restrict') ||
+      String(statusRaw).toLowerCase().includes('ban');
     const language = pickFirst(data.appSettings?.language, data.language, data.locale);
     const identifier = pickFirst(data.id, data._id, userId);
     const isPremium =
@@ -545,6 +560,7 @@ export default function UserProfileActivity({ userId }) {
       roleLabel,
       joinedDate,
       statusLabel,
+      isRestricted,
       language,
       identifier,
       currentPlan,
@@ -584,6 +600,84 @@ export default function UserProfileActivity({ userId }) {
     : [];
   const equippedBadgeImage = BADGE_TIER_IMAGE_MAP[profile.badgeTier] || '/badge.png';
   const nameplateBorderColor = profile.nameplateBorder?.color || '#89BC94';
+  const restrictionActionLabel = profile.isRestricted ? 'Unban' : 'Ban';
+
+  const handleStartChat = async () => {
+    if (!userId || chatLaunchStatus === 'loading') {
+      return;
+    }
+
+    setChatLaunchStatus('loading');
+    setChatLaunchError('');
+
+    try {
+      const chat = await dispatch(createSupportChat(userId)).unwrap();
+      const chatId = pickFirst(chat?.id, chat?._id);
+
+      if (!chatId) {
+        throw new Error('Support chat was created without a chat id');
+      }
+
+      dispatch(setActiveChat(chatId));
+      await dispatch(fetchSupportChats({ page: 1, limit: 20 }));
+      router.push(`/support-chat?chatId=${chatId}`);
+      setChatLaunchStatus('succeeded');
+    } catch (error) {
+      setChatLaunchStatus('failed');
+      setChatLaunchError(error?.message || 'Failed to open support chat');
+    }
+  };
+
+  const handleBanUser = async ({ isRestricted, reason }) => {
+    if (!userId || restrictionStatus === 'loading') {
+      return;
+    }
+
+    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+    const accessToken = getAccessToken();
+
+    if (!baseUrl) {
+      setRestrictionStatus('failed');
+      setRestrictionError('Missing NEXT_PUBLIC_API_BASE_URL');
+      return;
+    }
+
+    if (!accessToken) {
+      setRestrictionStatus('failed');
+      setRestrictionError('Missing access token');
+      return;
+    }
+
+    setRestrictionStatus('loading');
+    setRestrictionError('');
+
+    try {
+      const response = await fetch(`${baseUrl}/admin/support/users/${userId}/restriction`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          isRestricted: Boolean(isRestricted),
+          ...(Boolean(isRestricted) ? { reason: reason?.trim() || 'violated platform policy' } : {}),
+        }),
+      });
+
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok || payload?.success === false) {
+        throw new Error(payload?.message || 'Failed to update user restriction');
+      }
+
+      setRestrictionStatus('succeeded');
+      setIsBanModalOpen(false);
+      setProfileRefreshKey((current) => current + 1);
+    } catch (error) {
+      setRestrictionStatus('failed');
+      setRestrictionError(error?.message || 'Failed to update user restriction');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-6">
@@ -854,17 +948,25 @@ export default function UserProfileActivity({ userId }) {
               </div>
 
               <div className="flex items-center justify-center gap-3 pt-12">
-                <Button className="h-8 roun  ded-[8px] bg-[#4FB2F3] px-4 py-1 text-sm font-normal text-white hover:bg-[#4FB2F3]">
-                  Chat
+                <Button
+                  className="h-8 rounded-[8px] bg-[#4FB2F3] px-4 py-1 text-sm font-normal text-white hover:bg-[#4FB2F3]"
+                  onClick={handleStartChat}
+                  disabled={chatLaunchStatus === 'loading' || profileStatus === 'loading'}
+                >
+                  {chatLaunchStatus === 'loading' ? 'Opening...' : 'Chat'}
                 </Button>
                 <Button
                   variant="destructive"
                   className="h-8 rounded-[8px] bg-[#F34F4F] px-4 py-1 text-sm font-normal text-white hover:bg-[#F34F4F]"
                   onClick={() => setIsBanModalOpen(true)}
+                  disabled={restrictionStatus === 'loading'}
                 >
-                  Ban
+                  {restrictionStatus === 'loading' ? 'Saving...' : restrictionActionLabel}
                 </Button>
               </div>
+              {chatLaunchError ? (
+                <p className="text-center text-sm text-red-500">{chatLaunchError}</p>
+              ) : null}
             </CardContent>
           </Card>
         </div>
@@ -1045,8 +1147,18 @@ export default function UserProfileActivity({ userId }) {
 
       <BanUserModal
         open={isBanModalOpen}
-        onOpenChange={setIsBanModalOpen}
+        onOpenChange={(nextOpen) => {
+          setIsBanModalOpen(nextOpen);
+          if (!nextOpen) {
+            setRestrictionError('');
+            setRestrictionStatus('idle');
+          }
+        }}
+        onConfirm={handleBanUser}
         userName={profile.fullName}
+        isRestricted={profile.isRestricted}
+        loading={restrictionStatus === 'loading'}
+        error={restrictionError}
       />
     </div>
   );
