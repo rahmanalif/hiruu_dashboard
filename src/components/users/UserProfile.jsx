@@ -100,32 +100,81 @@ const summarizeLogDescription = (log) => {
 };
 
 const classifyActivityCategory = (log) => {
-  const haystack = [
-    pickFirst(log.action, log.type, log.event, log.name),
-    pickFirst(log.message, log.description, log.details),
-    pickFirst(log.entityType, log.source),
-  ]
-    .filter(Boolean)
-    .join(' ')
-    .toLowerCase();
+  const action = String(pickFirst(log.action, log.type, log.event, log.name)).toLowerCase();
+  const entityType = String(pickFirst(log.entityType, log.entity?.type)).toLowerCase();
+  const source = String(pickFirst(log.source, log.origin)).toLowerCase();
+  const message = String(
+    pickFirst(log.message, log.description, log.details, log.summary)
+  ).toLowerCase();
 
-  if (haystack.includes('role')) {
+  if (
+    action.startsWith('employment.') ||
+    action.startsWith('role.') ||
+    action.includes('.role_') ||
+    action.includes('permission') ||
+    entityType === 'role' ||
+    entityType === 'employment' ||
+    source === 'employment' ||
+    source === 'role' ||
+    message.includes('role')
+  ) {
     return 'role';
   }
 
-  if (haystack.includes('ai')) {
+  if (
+    action.startsWith('ai.') ||
+    entityType === 'ai' ||
+    source === 'ai' ||
+    message.includes(' ai')
+  ) {
     return 'ai';
   }
 
-  if (haystack.includes('token')) {
+  if (
+    action.startsWith('token.') ||
+    action.startsWith('coin.') ||
+    action.startsWith('referral.') ||
+    action.includes('token') ||
+    action.includes('coin') ||
+    entityType === 'token' ||
+    entityType === 'coin' ||
+    source === 'token' ||
+    source === 'coin' ||
+    message.includes('token') ||
+    message.includes('coin')
+  ) {
     return 'tokens';
   }
 
-  if (haystack.includes('premium') || haystack.includes('plan') || haystack.includes('subscription')) {
+  if (
+    action.startsWith('subscription.') ||
+    action.startsWith('plan.') ||
+    action.includes('premium') ||
+    entityType === 'subscription' ||
+    entityType === 'plan' ||
+    source === 'subscription' ||
+    message.includes('subscription') ||
+    message.includes('premium') ||
+    message.includes('plan')
+  ) {
     return 'premium';
   }
 
-  if (haystack.includes('job') || haystack.includes('application') || haystack.includes('apply')) {
+  if (
+    action.startsWith('recruitment.') ||
+    action.startsWith('job.') ||
+    action.startsWith('application.') ||
+    action.includes('job') ||
+    action.includes('apply') ||
+    entityType === 'recruitment' ||
+    entityType === 'job' ||
+    entityType === 'application' ||
+    source === 'recruitment' ||
+    source === 'job' ||
+    message.includes('job') ||
+    message.includes('application') ||
+    message.includes('apply')
+  ) {
     return 'job';
   }
 
