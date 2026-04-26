@@ -412,5 +412,44 @@
       "rating": "Rating"
     },
     "loading": "Loading business profile..."
+  },
+  "Notifications": {
+    "title": "Notification",
+    "markAllRead": "Mark all as read",
+    "marking": "Marking...",
+    "loading": "Loading notifications...",
+    "markAsRead": "Mark as read",
+    "noNotifications": "No notifications found.",
+    "noMessage": "No notification message available."
+  },
+  "AddMaintainer": {
+    "title": "Add Maintainer",
+    "upload": {
+      "click": "Click to upload",
+      "or": " or drag and drop",
+      "hint": "PNG or JPG (max. 800x800px)"
+    },
+    "name": "Name",
+    "email": "Email",
+    "role": "Role",
+    "permission": "Permission",
+    "placeholders": {
+      "name": "User name",
+      "email": "Email",
+      "selectRole": "Select role",
+      "loadingRoles": "Loading roles..."
+    },
+    "messages": {
+      "selectRoleToSee": "Select a role to see permissions",
+      "noPermissions": "No permissions assigned",
+      "noPermissionToAssign": "You do not have permission to assign any maintainer role.",
+      "note": "Note:",
+      "reviewNote": "Please review the role permissions carefully before saving."
+    },
+    "actions": {
+      "save": "Save",
+      "saving": "Saving...",
+      "cancel": "Cancel"
+    }
   }
 }

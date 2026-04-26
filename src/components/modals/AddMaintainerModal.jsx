@@ -26,6 +26,7 @@ import {
   resetCreateMaintainerState,
 } from "@/redux/maintainerRolesSlice";
 import { canAssignRole, resolveUserPermissions } from "@/lib/permissions";
+import { useTranslations } from "next-intl";
 
 const formatPermissionKey = (permissionKey) =>
   permissionKey
@@ -39,6 +40,7 @@ export default function AddMaintainerModal({
   onSuccess,
 }) {
   const dispatch = useDispatch();
+  const t = useTranslations('AddMaintainer');
   const fileInputRef = useRef(null);
   const currentUser = useSelector((state) => state.auth.user);
   const { roles, status, error, createStatus, createError } = useSelector(
@@ -86,18 +88,18 @@ export default function AddMaintainerModal({
   const permissionText = useMemo(() => {
     const permissions = selectedRole?.permissions;
     if (!permissions || typeof permissions !== "object") {
-      return "Select a role to see permissions";
+      return t('messages.selectRoleToSee');
     }
 
     const entries = Object.entries(permissions);
     if (!entries.length) {
-      return "No permissions assigned";
+      return t('messages.noPermissions');
     }
 
     return entries
       .map(([key, value]) => `${formatPermissionKey(key)} (${value})`)
       .join(", ");
-  }, [selectedRole]);
+  }, [selectedRole, t]);
 
   const allowedRoles = useMemo(() => {
     const userPermissions = resolveUserPermissions(currentUser);
@@ -164,7 +166,7 @@ export default function AddMaintainerModal({
             <div className="flex items-center gap-2">
               <Lock className="h-4 w-4" />
               <DialogTitle className="text-lg font-medium">
-                Add Maintainer
+                {t('title')}
               </DialogTitle>
             </div>
             <button
@@ -214,12 +216,12 @@ export default function AddMaintainerModal({
                   className="text-blue-500 hover:underline"
                   onClick={() => fileInputRef.current?.click()}
                 >
-                  Click to upload
+                  {t('upload.click')}
                 </button>
-                <span className="text-gray-500"> or drag and drop</span>
+                <span className="text-gray-500">{t('upload.or')}</span>
               </div>
               <p className="mt-1 text-xs text-gray-400">
-                PNG or JPG (max. 800x800px)
+                {t('upload.hint')}
               </p>
               {avatar ? (
                 <p className="mt-2 text-xs text-gray-600">{avatar.name}</p>
@@ -236,11 +238,11 @@ export default function AddMaintainerModal({
 
           <div className="space-y-2">
             <Label className="text-sm font-medium">
-              Name<span className="text-red-500">*</span>
+              {t('name')}<span className="text-red-500">*</span>
             </Label>
             <Input
               type="text"
-              placeholder="User name"
+              placeholder={t('placeholders.name')}
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
@@ -248,23 +250,23 @@ export default function AddMaintainerModal({
 
           <div className="space-y-2">
             <Label className="text-sm font-medium">
-              Email<span className="text-red-500">*</span>
+              {t('email')}<span className="text-red-500">*</span>
             </Label>
             <Input
               type="email"
-              placeholder="Email"
+              placeholder={t('placeholders.email')}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
           </div>
 
           <div className="space-y-2">
-            <Label className="text-sm font-medium">Role</Label>
+            <Label className="text-sm font-medium">{t('role')}</Label>
             <Select value={role} onValueChange={setRole}>
               <SelectTrigger>
                 <SelectValue
                   placeholder={
-                    status === "loading" ? "Loading roles..." : "Select role"
+                    status === "loading" ? t('placeholders.loadingRoles') : t('placeholders.selectRole')
                   }
                 />
               </SelectTrigger>
@@ -279,13 +281,13 @@ export default function AddMaintainerModal({
             {error ? <p className="text-xs text-red-500">{error}</p> : null}
             {!error && !allowedRoles.length ? (
               <p className="text-xs text-amber-600">
-                You do not have permission to assign any maintainer role.
+                {t('messages.noPermissionToAssign')}
               </p>
             ) : null}
           </div>
 
           <div className="space-y-2">
-            <Label className="text-sm font-medium">Permission</Label>
+            <Label className="text-sm font-medium">{t('permission')}</Label>
             <div className="flex items-center gap-2 text-sm">
               <Check className="h-4 w-4 text-gray-600" />
               <span>{permissionText}</span>
@@ -294,8 +296,7 @@ export default function AddMaintainerModal({
 
           <div className="rounded border border-yellow-200 bg-yellow-50 px-3 py-2">
             <p className="text-xs text-yellow-800">
-              <span className="font-medium">Note:</span> Please review the role
-              permissions carefully before saving.
+              <span className="font-medium">{t('messages.note')}</span> {t('messages.reviewNote')}
             </p>
           </div>
           {createError ? (
@@ -305,7 +306,7 @@ export default function AddMaintainerModal({
 
         <DialogFooter className="gap-3 sm:gap-3">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t('actions.cancel')}
           </Button>
           <Button
             className="bg-blue-500 text-white hover:bg-blue-600"
@@ -319,7 +320,7 @@ export default function AddMaintainerModal({
             }
           >
             <Check className="mr-1 h-4 w-4" />
-            {createStatus === "loading" ? "Saving..." : "Save"}
+            {createStatus === "loading" ? t('actions.saving') : t('actions.save')}
           </Button>
         </DialogFooter>
       </DialogContent>

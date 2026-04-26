@@ -8,6 +8,7 @@ import {
   markAllNotificationsRead,
   markNotificationRead,
 } from '@/redux/notificationsSlice';
+import { useTranslations } from 'next-intl';
 
 const pickFirst = (...values) =>
   values.find((value) => value !== undefined && value !== null && value !== '') ?? '';
@@ -57,7 +58,7 @@ const getNotificationPerson = (notification) => {
   };
 };
 
-const mapNotification = (notification) => {
+const mapNotification = (notification, t) => {
   const person = getNotificationPerson(notification);
 
   return {
@@ -69,7 +70,7 @@ const mapNotification = (notification) => {
       notification?.description,
       notification?.content,
       notification?.text,
-      'No notification message available.'
+      t('noMessage')
     ),
     date: formatDate(pickFirst(notification?.createdAt, notification?.updatedAt, notification?.date)),
     image: person.image,
@@ -79,6 +80,8 @@ const mapNotification = (notification) => {
 
 const NotificationSection = () => {
   const dispatch = useDispatch();
+  const t = useTranslations('Notifications');
+  
   const {
     notifications,
     status,
@@ -93,8 +96,8 @@ const NotificationSection = () => {
   }, [dispatch]);
 
   const notificationItems = useMemo(
-    () => notifications.map(mapNotification),
-    [notifications]
+    () => notifications.map((n) => mapNotification(n, t)),
+    [notifications, t]
   );
   const unreadCount = notificationItems.filter((notification) => !notification.isRead).length;
 
@@ -118,19 +121,19 @@ const NotificationSection = () => {
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-4xl mx-auto">
         <div className="mb-6 flex items-center justify-between gap-4">
-          <h1 className="text-2xl font-bold text-gray-900">Notification</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t('title')}</h1>
           <Button
             variant="outline"
             size="sm"
             onClick={handleMarkAllRead}
             disabled={!unreadCount || markAllReadStatus === 'loading'}
           >
-            {markAllReadStatus === 'loading' ? 'Marking...' : 'Mark all as read'}
+            {markAllReadStatus === 'loading' ? t('marking') : t('markAllRead')}
           </Button>
         </div>
 
         {status === 'loading' ? (
-          <p className="text-sm text-gray-500">Loading notifications...</p>
+          <p className="text-sm text-gray-500">{t('loading')}</p>
         ) : null}
 
         {status === 'failed' ? (
@@ -178,7 +181,7 @@ const NotificationSection = () => {
                           onClick={() => handleMarkRead(notification)}
                           disabled={markReadStatus === 'loading'}
                         >
-                          Mark as read
+                          {t('markAsRead')}
                         </Button>
                       </div>
                     ) : null}
@@ -191,7 +194,7 @@ const NotificationSection = () => {
           {status === 'succeeded' && !notificationItems.length ? (
             <Card className="border border-gray-200">
               <CardContent className="p-8 text-center text-sm text-gray-500">
-                No notifications found.
+                {t('noNotifications')}
               </CardContent>
             </Card>
           ) : null}
