@@ -419,8 +419,208 @@
     "marking": "Marking...",
     "loading": "Loading notifications...",
     "markAsRead": "Mark as read",
+    "delete": "Delete",
+    "unread": "Unread",
     "noNotifications": "No notifications found.",
-    "noMessage": "No notification message available."
+    "noMessage": "No notification message available.",
+    "actions": {
+      "open": "Open",
+      "open_chat": "Open chat",
+      "join_call": "Join call",
+      "view_shift_assignment": "View shift",
+      "review_shift_request": "Review request",
+      "view_achievement": "View achievement",
+      "view_business_update": "View business",
+      "view_system_notice": "View notice"
+    },
+    "legacy": {
+      "businessUpdate": {
+        "title": "Business update",
+        "body": "There is a new update for {businessName}."
+      },
+      "supportUpdate": {
+        "title": "Support update",
+        "body": "There is a new support ticket update."
+      },
+      "systemNotice": {
+        "title": "System notice",
+        "body": "There is a new system notice."
+      },
+      "chatMessage": {
+        "title": "New message",
+        "body": "You have a new chat message."
+      },
+      "incomingCall": {
+        "title": "Incoming call",
+        "body": "{callerName} is calling."
+      },
+      "clockInReminder": {
+        "title": "Clock-in reminder",
+        "body": "Do not forget to clock in for your shift."
+      },
+      "coinsEarned": {
+        "title": "Coins earned",
+        "body": "You earned {rewardCoins} coins."
+      },
+      "achievementUnlocked": {
+        "title": "Achievement unlocked",
+        "body": "You unlocked {achievementTitle}."
+      },
+      "shiftAssigned": {
+        "title": "Shift assigned",
+        "body": "You have a new shift assignment."
+      },
+      "shiftCancelled": {
+        "title": "Shift cancelled",
+        "body": "A shift has been cancelled."
+      },
+      "shiftChanged": {
+        "title": "Shift changed",
+        "body": "There is a shift request update."
+      },
+      "shiftSwapRequested": {
+        "title": "Shift swap requested",
+        "body": "{requesterName} requested a shift swap."
+      },
+      "shiftSwapApproved": {
+        "title": "Shift swap approved",
+        "body": "Your shift swap request was approved."
+      },
+      "shiftSwapRejected": {
+        "title": "Shift swap rejected",
+        "body": "Your shift swap request was rejected."
+      },
+      "leaveApproved": {
+        "title": "Leave approved",
+        "body": "Your leave request was approved."
+      },
+      "leaveRejected": {
+        "title": "Leave rejected",
+        "body": "Your leave request was rejected."
+      }
+    },
+    "events": {
+      "business_announcement": {
+        "employee_joined_business": {
+          "title": "New Employee Joined",
+          "body": "{employeeName} has joined {businessName}."
+        },
+        "recruitment_application_received": {
+          "title": "New Application",
+          "body": "A new recruitment application was received for {businessName}."
+        },
+        "recruitment_offer_received": {
+          "title": "New Offer Received",
+          "body": "A new recruitment offer has been received."
+        }
+      },
+      "support_ticket_update": {
+        "support_started": {
+          "title": "Support Started",
+          "body": "A support session has been initiated."
+        }
+      },
+      "system_maintenance": {
+        "subscription_purchased": {
+          "title": "Subscription Purchased",
+          "body": "A new subscription for {planName} was purchased by {businessName}."
+        },
+        "manual_test": {
+          "title": "System Test",
+          "body": "This is a manual system test notification."
+        }
+      },
+      "chat_message": {
+        "chat_message": {
+          "title": "New Message",
+          "body": "You have a new message from {senderName}."
+        }
+      },
+      "call_incoming": {
+        "call_incoming": {
+          "title": "Incoming Call",
+          "body": "{callerName} is calling."
+        }
+      },
+      "clock_in_reminder": {
+        "clock_in_reminder": {
+          "title": "Clock-in Reminder",
+          "body": "Don't forget to clock in for your shift at {businessName}."
+        }
+      },
+      "coins_earned": {
+        "monthly_leaderboard_reward": {
+          "title": "Leaderboard Reward",
+          "body": "Congratulations! You earned {rewardCoins} tokens for ranking #{rank}."
+        }
+      },
+      "achievement_unlocked": {
+        "achievement_unlocked": {
+          "title": "Achievement Unlocked",
+          "body": "You've unlocked the '{achievementTitle}' achievement!"
+        },
+        "badge_tier_unlocked": {
+          "title": "New Badge Tier",
+          "body": "You've reached a new badge tier: {tierName}."
+        }
+      },
+      "shift_assigned": {
+        "shift_assigned": {
+          "title": "Shift Assigned",
+          "body": "You have been assigned a new shift at {businessName} on {shiftDate}."
+        }
+      },
+      "shift_cancelled": {
+        "shift_cancelled": {
+          "title": "Shift Cancelled",
+          "body": "Your shift at {businessName} on {shiftDate} has been cancelled."
+        }
+      },
+      "shift_changed": {
+        "shift_request_created": {
+          "title": "Shift Request",
+          "body": "{requesterName} created a shift change request."
+        },
+        "shift_request_approved": {
+          "title": "Shift Request Approved",
+          "body": "Your shift change request has been approved."
+        },
+        "shift_request_rejected": {
+          "title": "Shift Request Rejected",
+          "body": "Your shift change request was rejected."
+        }
+      },
+      "shift_swap_requested": {
+        "shift_swap_requested": {
+          "title": "Shift Swap Requested",
+          "body": "{requesterName} requested a shift swap at {businessName}."
+        }
+      },
+      "shift_swap_approved": {
+        "shift_swap_approved": {
+          "title": "Shift Swap Approved",
+          "body": "Your shift swap request at {businessName} was approved."
+        }
+      },
+      "shift_swap_rejected": {
+        "shift_swap_rejected": {
+          "title": "Shift Swap Rejected",
+          "body": "Your shift swap request at {businessName} was rejected."
+        }
+      },
+      "leave_approved": {
+        "leave_approved": {
+          "title": "Leave Approved",
+          "body": "Your leave request for {leaveDate} has been approved."
+        }
+      },
+      "leave_rejected": {
+        "leave_rejected": {
+          "title": "Leave Rejected",
+          "body": "Your leave request for {leaveDate} was rejected."
+        }
+      }
+    }
   },
   "AddMaintainer": {
     "title": "Add Maintainer",

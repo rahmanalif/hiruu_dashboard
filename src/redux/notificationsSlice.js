@@ -8,6 +8,7 @@ const initialState = {
   error: null,
   markReadStatus: "idle",
   markAllReadStatus: "idle",
+  deleteStatus: "idle",
   markReadError: null,
 };
 
@@ -179,6 +180,37 @@ export const markAllNotificationsRead = createAsyncThunk(
   }
 );
 
+export const deleteNotification = createAsyncThunk(
+  "notifications/deleteNotification",
+  async (id, { getState, rejectWithValue }) => {
+    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+    if (!baseUrl) {
+      return rejectWithValue("Missing NEXT_PUBLIC_API_BASE_URL");
+    }
+
+    if (!id) {
+      return rejectWithValue("Missing notification ID");
+    }
+
+    const accessToken = getAccessToken(getState());
+    if (!accessToken) {
+      return rejectWithValue("Missing access token");
+    }
+
+    try {
+      await requestJson({
+        endpoint: `${baseUrl}/notifications/${id}?scope=admin`,
+        method: "DELETE",
+        accessToken,
+      });
+
+      return id;
+    } catch (error) {
+      return rejectWithValue(error?.message || "Failed to delete notification");
+    }
+  }
+);
+
 const markItemRead = (notification) => ({
   ...notification,
   isRead: true,
@@ -211,13 +243,17 @@ const notificationsSlice = createSlice({
       })
       .addCase(markNotificationRead.fulfilled, (state, action) => {
         state.markReadStatus = "succeeded";
-        state.notifications = state.notifications.map((notification) => {
+        state.notifications = state.notifications.flatMap((notification) => {
           const notificationId = notification?.id || notification?._id;
           if (String(notificationId) !== String(action.payload.id)) {
-            return notification;
+            return [notification];
           }
 
-          return action.payload.notification || markItemRead(notification);
+          if (!action.payload.notification && notification?.type === "chat_message") {
+            return [];
+          }
+
+          return [action.payload.notification || markItemRead(notification)];
         });
       })
       .addCase(markNotificationRead.rejected, (state, action) => {
@@ -235,6 +271,21 @@ const notificationsSlice = createSlice({
       .addCase(markAllNotificationsRead.rejected, (state, action) => {
         state.markAllReadStatus = "failed";
         state.markReadError = action.payload || "Failed to mark notifications as read";
+      })
+      .addCase(deleteNotification.pending, (state) => {
+        state.deleteStatus = "loading";
+        state.markReadError = null;
+      })
+      .addCase(deleteNotification.fulfilled, (state, action) => {
+        state.deleteStatus = "succeeded";
+        state.notifications = state.notifications.filter((notification) => {
+          const notificationId = notification?.id || notification?._id;
+          return String(notificationId) !== String(action.payload);
+        });
+      })
+      .addCase(deleteNotification.rejected, (state, action) => {
+        state.deleteStatus = "failed";
+        state.markReadError = action.payload || "Failed to delete notification";
       });
   },
 });

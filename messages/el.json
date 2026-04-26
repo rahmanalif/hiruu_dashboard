@@ -419,8 +419,208 @@
     "marking": "Σημείωση...",
     "loading": "Φόρτωση ειδοποιήσεων...",
     "markAsRead": "Σημείωση ως αναγνωσμένο",
+    "delete": "Διαγραφή",
+    "unread": "Unread",
     "noNotifications": "Δεν βρέθηκαν ειδοποιήσεις.",
-    "noMessage": "Δεν υπάρχει διαθέσιμο μήνυμα ειδοποίησης."
+    "noMessage": "Δεν υπάρχει διαθέσιμο μήνυμα ειδοποίησης.",
+    "actions": {
+      "open": "Open",
+      "open_chat": "Open chat",
+      "join_call": "Join call",
+      "view_shift_assignment": "View shift",
+      "review_shift_request": "Review request",
+      "view_achievement": "View achievement",
+      "view_business_update": "View business",
+      "view_system_notice": "View notice"
+    },
+    "legacy": {
+      "businessUpdate": {
+        "title": "Business update",
+        "body": "There is a new update for {businessName}."
+      },
+      "supportUpdate": {
+        "title": "Support update",
+        "body": "There is a new support ticket update."
+      },
+      "systemNotice": {
+        "title": "System notice",
+        "body": "There is a new system notice."
+      },
+      "chatMessage": {
+        "title": "New message",
+        "body": "You have a new chat message."
+      },
+      "incomingCall": {
+        "title": "Incoming call",
+        "body": "{callerName} is calling."
+      },
+      "clockInReminder": {
+        "title": "Clock-in reminder",
+        "body": "Do not forget to clock in for your shift."
+      },
+      "coinsEarned": {
+        "title": "Coins earned",
+        "body": "You earned {rewardCoins} coins."
+      },
+      "achievementUnlocked": {
+        "title": "Achievement unlocked",
+        "body": "You unlocked {achievementTitle}."
+      },
+      "shiftAssigned": {
+        "title": "Shift assigned",
+        "body": "You have a new shift assignment."
+      },
+      "shiftCancelled": {
+        "title": "Shift cancelled",
+        "body": "A shift has been cancelled."
+      },
+      "shiftChanged": {
+        "title": "Shift changed",
+        "body": "There is a shift request update."
+      },
+      "shiftSwapRequested": {
+        "title": "Shift swap requested",
+        "body": "{requesterName} requested a shift swap."
+      },
+      "shiftSwapApproved": {
+        "title": "Shift swap approved",
+        "body": "Your shift swap request was approved."
+      },
+      "shiftSwapRejected": {
+        "title": "Shift swap rejected",
+        "body": "Your shift swap request was rejected."
+      },
+      "leaveApproved": {
+        "title": "Leave approved",
+        "body": "Your leave request was approved."
+      },
+      "leaveRejected": {
+        "title": "Leave rejected",
+        "body": "Your leave request was rejected."
+      }
+    },
+    "events": {
+      "business_announcement": {
+        "employee_joined_business": {
+          "title": "Νέος Υπάλληλος Προστέθηκε",
+          "body": "Ο/Η {employeeName} προστέθηκε στην επιχείρηση {businessName}."
+        },
+        "recruitment_application_received": {
+          "title": "Νέα Αίτηση",
+          "body": "Λήφθηκε μια νέα αίτηση πρόσληψης για την επιχείρηση {businessName}."
+        },
+        "recruitment_offer_received": {
+          "title": "Νέα Προσφορά Ελήφθη",
+          "body": "Έχει ληφθεί μια νέα προσφορά πρόσληψης."
+        }
+      },
+      "support_ticket_update": {
+        "support_started": {
+          "title": "Η Υποστήριξη Ξεκίνησε",
+          "body": "Μια συνεδρία υποστήριξης έχει ξεκινήσει."
+        }
+      },
+      "system_maintenance": {
+        "subscription_purchased": {
+          "title": "Αγορά Συνδρομής",
+          "body": "Μια νέα συνδρομή για το πρόγραμμα {planName} αγοράστηκε από την επιχείρηση {businessName}."
+        },
+        "manual_test": {
+          "title": "Δοκιμή Συστήματος",
+          "body": "Αυτή είναι μια μη αυτόματη ειδοποίηση δοκιμής συστήματος."
+        }
+      },
+      "chat_message": {
+        "chat_message": {
+          "title": "Νέο Μήνυμα",
+          "body": "Έχετε ένα νέο μήνυμα από τον/την {senderName}."
+        }
+      },
+      "call_incoming": {
+        "call_incoming": {
+          "title": "Εισερχόμενη Κλήση",
+          "body": "Ο/Η {callerName} σας καλεί."
+        }
+      },
+      "clock_in_reminder": {
+        "clock_in_reminder": {
+          "title": "Υπενθύμιση Προσέλευσης",
+          "body": "Μην ξεχάσετε να δηλώσετε την προσέλευσή σας για τη βάρδια στην επιχείρηση {businessName}."
+        }
+      },
+      "coins_earned": {
+        "monthly_leaderboard_reward": {
+          "title": "Επιβράβευση Κατάταξης",
+          "body": "Συγχαρητήρια! Κερδίσατε {rewardCoins} tokens για την κατάταξή σας στη θέση #{rank}."
+        }
+      },
+      "achievement_unlocked": {
+        "achievement_unlocked": {
+          "title": "Επίτευγμα Ξεκλειδώθηκε",
+          "body": "Ξεκλειδώσατε το επίτευγμα '{achievementTitle}'!"
+        },
+        "badge_tier_unlocked": {
+          "title": "Νέο Επίπεδο Σήματος",
+          "body": "Φτάσατε σε ένα νέο επίπεδο σήματος: {tierName}."
+        }
+      },
+      "shift_assigned": {
+        "shift_assigned": {
+          "title": "Ανάθεση Βάρδιας",
+          "body": "Σας ανατέθηκε μια νέα βάρδια στην επιχείρηση {businessName} στις {shiftDate}."
+        }
+      },
+      "shift_cancelled": {
+        "shift_cancelled": {
+          "title": "Ακύρωση Βάρδιας",
+          "body": "Η βάρδιά σας στην επιχείρηση {businessName} στις {shiftDate} ακυρώθηκε."
+        }
+      },
+      "shift_changed": {
+        "shift_request_created": {
+          "title": "Αίτημα Βάρδιας",
+          "body": "Ο/Η {requesterName} δημιούργησε ένα αίτημα αλλαγής βάρδιας."
+        },
+        "shift_request_approved": {
+          "title": "Έγκριση Αιτήματος Βάρδιας",
+          "body": "Το αίτημά σας για αλλαγή βάρδιας εγκρίθηκε."
+        },
+        "shift_request_rejected": {
+          "title": "Απόρριψη Αιτήματος Βάρδιας",
+          "body": "Το αίτημά σας για αλλαγή βάρδιας απορρίφθηκε."
+        }
+      },
+      "shift_swap_requested": {
+        "shift_swap_requested": {
+          "title": "Shift Swap Requested",
+          "body": "{requesterName} requested a shift swap at {businessName}."
+        }
+      },
+      "shift_swap_approved": {
+        "shift_swap_approved": {
+          "title": "Shift Swap Approved",
+          "body": "Your shift swap request at {businessName} was approved."
+        }
+      },
+      "shift_swap_rejected": {
+        "shift_swap_rejected": {
+          "title": "Shift Swap Rejected",
+          "body": "Your shift swap request at {businessName} was rejected."
+        }
+      },
+      "leave_approved": {
+        "leave_approved": {
+          "title": "Έγκριση Άδειας",
+          "body": "Το αίτημά σας για άδεια στις {leaveDate} εγκρίθηκε."
+        }
+      },
+      "leave_rejected": {
+        "leave_rejected": {
+          "title": "Απόρριψη Άδειας",
+          "body": "Το αίτημά σας για άδεια στις {leaveDate} απορρίφθηκε."
+        }
+      }
+    }
   },
   "AddMaintainer": {
     "title": "Προσθήκη Συντηρητή",
