@@ -4,7 +4,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, Bell, Star, Languages } from 'lucide-react';
-import Link from 'next/link';
+import { Link, useRouter, usePathname } from '@/routing';
+import { useLocale, useTranslations } from 'next-intl';
 import { fetchAdminNotifications } from '@/redux/notificationsSlice';
 
 import {
@@ -20,6 +21,11 @@ const isNotificationRead = (notification) =>
 
 const TopNavbar = ({ breadcrumbs = [] }) => {
   const dispatch = useDispatch();
+  const locale = useLocale();
+  const router = useRouter();
+  const pathname = usePathname();
+  const t = useTranslations('Navbar');
+
   const { notifications, status } = useSelector((state) => state.notifications);
 
   useEffect(() => {
@@ -31,6 +37,12 @@ const TopNavbar = ({ breadcrumbs = [] }) => {
   const hasUnreadNotifications = notifications.some(
     (notification) => !isNotificationRead(notification)
   );
+
+  const handleLanguageChange = (newLocale) => {
+    // Map internal value to actual locale code
+    const localeCode = newLocale === 'greek' ? 'el' : 'en';
+    router.replace(pathname, { locale: localeCode });
+  };
 
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-3">
@@ -54,9 +66,9 @@ const TopNavbar = ({ breadcrumbs = [] }) => {
               ))
             ) : (
               <>
-                <span className="text-gray-600">Dashboards</span>
+                <span className="text-gray-600">{t('dashboards')}</span>
                 <span className="text-gray-400">/</span>
-                <span className="text-gray-900 font-medium">Overview</span>
+                <span className="text-gray-900 font-medium">{t('overview')}</span>
               </>
             )}
           </div>
@@ -64,7 +76,10 @@ const TopNavbar = ({ breadcrumbs = [] }) => {
 
         {/* Right side - Language, Notification, and Search */}
         <div className="flex items-center space-x-2">
-          <Select defaultValue="english">
+          <Select 
+            defaultValue={locale === 'el' ? 'greek' : 'english'} 
+            onValueChange={handleLanguageChange}
+          >
             <SelectTrigger className="h-8 border-none shadow-none focus:ring-0 w-auto px-2 hover:bg-gray-100">
               <div className="flex items-center space-x-2">
                 <Languages className="w-5 h-5 text-gray-600" />
@@ -72,8 +87,8 @@ const TopNavbar = ({ breadcrumbs = [] }) => {
               </div>
             </SelectTrigger>
             <SelectContent align="end">
-              <SelectItem value="english">English</SelectItem>
-              <SelectItem value="greek">Greek</SelectItem>
+              <SelectItem value="english">{t('languages.english')}</SelectItem>
+              <SelectItem value="greek">{t('languages.greek')}</SelectItem>
             </SelectContent>
           </Select>
           <Link href="/notifications">
@@ -87,7 +102,7 @@ const TopNavbar = ({ breadcrumbs = [] }) => {
           <div className="relative ml-2">
             <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <Input
-              placeholder="Search"
+              placeholder={t('search')}
               className="pl-10 w-64 h-9"
             />
           </div>

@@ -1,16 +1,19 @@
 "use client";
 import React, { useMemo } from 'react';
-import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { Link, useRouter } from '@/routing';
+import { usePathname } from 'next/navigation';
 import { useDispatch, useSelector } from 'react-redux';
 import { LogOut } from 'lucide-react';
 import { logoutUser } from '@/redux/authSlice';
 import { hasPermissionAccess, isAdminUser, resolveUserPermissions } from '@/lib/permissions';
+import { useTranslations } from 'next-intl';
 
 const Sidebar = () => {
   const dispatch = useDispatch();
   const router = useRouter();
   const pathname = usePathname();
+  const t = useTranslations('Sidebar');
+  
   const authStatus = useSelector((state) => state.auth.status);
   const currentUser = useSelector((state) => state.auth.user);
   const isAdmin = useMemo(() => isAdminUser(currentUser), [currentUser]);
@@ -19,11 +22,12 @@ const Sidebar = () => {
     [currentUser]
   );
   const userInitial = currentUser?.name?.[0]?.toUpperCase() || 'A';
-  const roleLabel = isAdmin ? 'Super Admin' : 'Maintainer';
-  const accessLabel = isAdmin ? 'Full access' : 'Scoped access';
+  const roleLabel = isAdmin ? t('superAdmin') : t('maintainer');
+  const accessLabel = isAdmin ? t('fullAccess') : t('scopedAccess');
 
   const getLinkClassName = (path) => {
-    const isActive = pathname === path;
+    // Handling localized path comparison
+    const isActive = pathname.endsWith(path);
     return `w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium rounded-lg ${
       isActive 
         ? 'border-l-6 border-[#4FB2F3] text-gray-900 bg-[#ECF7FE]' 
@@ -34,7 +38,7 @@ const Sidebar = () => {
   const menuItems = [
     {
       href: '/home',
-      label: 'Overview',
+      label: t('dashboard'),
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
           <path d="M4 6C4 5.05719 4 4.58579 4.29289 4.29289C4.58579 4 5.05719 4 6 4H8C8.94281 4 9.41421 4 9.70711 4.29289C10 4.58579 10 5.05719 10 6V8C10 8.94281 10 9.41421 9.70711 9.70711C9.41421 10 8.94281 10 8 10H6C5.05719 10 4.58579 10 4.29289 9.70711C4 9.41421 4 8.94281 4 8V6Z" stroke="#11293A" strokeLinejoin="round"/>
@@ -46,7 +50,7 @@ const Sidebar = () => {
     },
     {
       href: '/users',
-      label: 'Users',
+      label: t('users'),
       requiredPermissions: 'system.users',
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -56,7 +60,7 @@ const Sidebar = () => {
     },
     {
       href: '/business-store',
-      label: 'Business / Store',
+      label: t('businessStore'),
       requiredPermissions: 'system.businesses',
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -66,7 +70,7 @@ const Sidebar = () => {
     },
     {
       href: '/role-permission',
-      label: 'Role & Permission',
+      label: t('rolePermission'),
       requiredPermissions: 'system.maintainers',
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="22" viewBox="0 0 20 22" fill="none">
@@ -76,7 +80,7 @@ const Sidebar = () => {
     },
     {
       href: '/reward',
-      label: 'Rewards',
+      label: t('reward'),
       requiredPermissions: 'system.rewards',
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" width="19" height="21" viewBox="0 0 19 21" fill="none">
@@ -86,7 +90,7 @@ const Sidebar = () => {
     },
     {
       href: '/gift-coupons',
-      label: 'Gifts & Coupons',
+      label: t('giftCoupons'),
       requiredPermissions: 'system.coupons',
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" width="21" height="15" viewBox="0 0 21 15" fill="none">
@@ -96,7 +100,7 @@ const Sidebar = () => {
     },
     {
       href: '/payment',
-      label: 'Payments',
+      label: t('payment'),
       requiredPermissions: 'system.payments',
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" viewBox="0 0 21 21" fill="none">
@@ -106,7 +110,7 @@ const Sidebar = () => {
     },
     {
       href: '/support-chat',
-      label: 'Support Chat',
+      label: t('supportChat'),
       requiredPermissions: 'system.support',
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -116,7 +120,7 @@ const Sidebar = () => {
     },
     {
       href: '/setting',
-      label: 'Settings',
+      label: t('setting'),
       requiredPermissions: 'system.settings',
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" width="21" height="19" viewBox="0 0 21 19" fill="none">
@@ -132,7 +136,7 @@ const Sidebar = () => {
   );
 
   return (
-    <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
+    <div className="w-64 bg-white border-r border-gray-200 flex flex-col h-full">
       <div className="p-6 flex justify-center items-center">
         <img src="/Logo.png" alt="logo" className='w-30 h-12' />
       </div>
@@ -166,7 +170,7 @@ const Sidebar = () => {
               </div>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-semibold leading-5 text-slate-900">
-                  {currentUser?.name || 'Admin User'}
+                  {currentUser?.name || t('adminUser')}
                 </p>
                 <p className="mt-0.5 truncate text-xs text-slate-500">
                   {currentUser?.email || 'admin@hirvu.com'}
@@ -185,7 +189,7 @@ const Sidebar = () => {
 
             <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-600">
               <span className="text-xs font-medium">
-                {authStatus === 'loading' ? 'Logging out...' : 'Logout'}
+                {authStatus === 'loading' ? t('loggingOut') : t('logout')}
               </span>
               <LogOut className="h-4 w-4 shrink-0" />
             </div>

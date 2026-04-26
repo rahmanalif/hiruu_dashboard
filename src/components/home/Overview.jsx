@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { readStoredAuth, resolveAccessToken } from '@/lib/auth';
+import { useTranslations } from 'next-intl';
+
 // Table components inline
 const Table = ({ children, ...props }) => (
   <div className="w-full overflow-auto">
@@ -32,12 +34,6 @@ import BusinessProfile from '../buissness/BusinessProfile';
 import { fetchBusinessesQuery } from '@/redux/businessesSlice';
 
 const getAccessToken = () => resolveAccessToken(readStoredAuth()?.tokens);
-
-const periodOptions = [
-  { label: 'Daily', value: 'daily' },
-  { label: 'Weekly', value: 'weekly' },
-  { label: 'Monthly', value: 'monthly' },
-];
 
 const getFirstValue = (sources, keys, fallback = 0) => {
   for (const source of sources) {
@@ -76,7 +72,7 @@ const formatGrowth = (value) => {
   return `${sign}${numericValue.toFixed(2)}%`;
 };
 
-const buildOverviewStats = (payload) => {
+const buildOverviewStats = (payload, t) => {
   const data = payload?.data || {};
   const metrics = data?.metrics || {};
   const sources = [metrics, data, data.summary, data.statistics, data.stats];
@@ -138,25 +134,25 @@ const buildOverviewStats = (payload) => {
 
   return [
     {
-      title: 'New users',
+      title: t('stats.newUsers'),
       value: formatCount(getFirstValue([metrics.newUsers], ['current'], newUsersValue)),
       change: formatGrowth(getFirstValue([metrics.newUsers], ['growthPercent'], newUsersGrowth)),
       isPositive: toNumber(getFirstValue([metrics.newUsers], ['growthPercent'], newUsersGrowth)) >= 0,
     },
     {
-      title: 'Total User',
+      title: t('stats.totalUsers'),
       value: formatCount(getFirstValue([metrics.totalUsers], ['current'], totalUsersValue)),
       change: formatGrowth(getFirstValue([metrics.totalUsers], ['growthPercent'], totalUsersGrowth)),
       isPositive: toNumber(getFirstValue([metrics.totalUsers], ['growthPercent'], totalUsersGrowth)) >= 0,
     },
     {
-      title: 'New Businesses',
+      title: t('stats.newBusinesses'),
       value: formatCount(getFirstValue([metrics.newBusinesses], ['current'], newBusinessesValue)),
       change: formatGrowth(getFirstValue([metrics.newBusinesses], ['growthPercent'], newBusinessesGrowth)),
       isPositive: toNumber(getFirstValue([metrics.newBusinesses], ['growthPercent'], newBusinessesGrowth)) >= 0,
     },
     {
-      title: 'Payments',
+      title: t('stats.payments'),
       value: formatCurrency(getFirstValue([metrics.payments], ['currentAmount', 'current'], paymentsValue)),
       change: formatGrowth(getFirstValue([metrics.payments], ['growthPercent'], paymentsGrowth)),
       isPositive: toNumber(getFirstValue([metrics.payments], ['growthPercent'], paymentsGrowth)) >= 0,
@@ -164,7 +160,7 @@ const buildOverviewStats = (payload) => {
   ];
 };
 
-const buildPendingActions = (payload) => {
+const buildPendingActions = (payload, t) => {
   const metrics = payload?.data?.metrics || {};
 
   const verificationCount = toNumber(metrics.verification);
@@ -174,12 +170,12 @@ const buildPendingActions = (payload) => {
 
   return {
     openCount,
-    queueStatus: `${openCount} items need review across verification, chat, and reports.`,
+    queueStatus: t('pendingActions.queueStatusSubtitle', { count: openCount }),
     actions: [
       {
-        title: 'Verification',
-        subtitle: `${verificationCount} stores awaiting verification`,
-        action: 'Review',
+        title: t('pendingActions.verification.title'),
+        subtitle: t('pendingActions.verification.subtitle', { count: verificationCount }),
+        action: t('pendingActions.verification.action'),
         color: 'bg-blue-50 border-blue-100',
         icon: ShieldCheck,
         iconColor: 'text-blue-500',
@@ -187,9 +183,9 @@ const buildPendingActions = (payload) => {
         buttonColor: 'bg-blue-500 hover:bg-blue-600'
       },
       {
-        title: 'Support Chat',
-        subtitle: `${supportChatCount} New Chat`,
-        action: 'Respond',
+        title: t('pendingActions.supportChat.title'),
+        subtitle: t('pendingActions.supportChat.subtitle', { count: supportChatCount }),
+        action: t('pendingActions.supportChat.action'),
         color: 'bg-orange-50 border-orange-100',
         icon: MessageSquare,
         iconColor: 'text-orange-500',
@@ -197,9 +193,9 @@ const buildPendingActions = (payload) => {
         buttonColor: 'bg-orange-500 hover:bg-orange-600'
       },
       {
-        title: 'Reports',
-        subtitle: `${reportsCount} new report`,
-        action: 'Investigate',
+        title: t('pendingActions.reports.title'),
+        subtitle: t('pendingActions.reports.subtitle', { count: reportsCount }),
+        action: t('pendingActions.reports.action'),
         color: 'bg-red-50 border-red-100',
         icon: AlertCircle,
         iconColor: 'text-red-500',
@@ -212,21 +208,30 @@ const buildPendingActions = (payload) => {
 
 const Overview = () => {
   const dispatch = useDispatch();
+  const t = useTranslations('Overview');
+  
+  const periodOptions = [
+    { label: t('periods.daily'), value: 'daily' },
+    { label: t('periods.weekly'), value: 'weekly' },
+    { label: t('periods.monthly'), value: 'monthly' },
+  ];
+
   const { businesses, pagination, status: businessesStatus, error: businessesError } = useSelector((state) => state.businesses);
   const [selectedBusiness, setSelectedBusiness] = useState(null);
   const [businessSearchTerm, setBusinessSearchTerm] = useState('');
   const [selectedPeriod, setSelectedPeriod] = useState('daily');
+  
   const [statsData, setStatsData] = useState(() =>
     buildOverviewStats({
       data: {},
-    })
+    }, t)
   );
   const [pendingActionsData, setPendingActionsData] = useState(() =>
     buildPendingActions({
       data: {
         metrics: {},
       },
-    })
+    }, t)
   );
   const [statsStatus, setStatsStatus] = useState('idle');
   const [statsError, setStatsError] = useState('');
@@ -284,8 +289,8 @@ const Overview = () => {
           throw new Error(payload?.message || 'Failed to load dashboard analytics');
         }
 
-        setStatsData(buildOverviewStats(payload));
-        setPendingActionsData(buildPendingActions(payload));
+        setStatsData(buildOverviewStats(payload, t));
+        setPendingActionsData(buildPendingActions(payload, t));
         setStatsStatus('succeeded');
       } catch (error) {
         if (error?.name === 'AbortError') {
@@ -300,7 +305,7 @@ const Overview = () => {
     loadDashboardAnalytics();
 
     return () => controller.abort();
-  }, [selectedPeriod]);
+  }, [selectedPeriod, t]);
 
   const businessData = useMemo(
     () =>
@@ -309,21 +314,23 @@ const Overview = () => {
         owner: business.owner?.name || 'N/A',
         employees: business._count?.employments || 0,
         phone: [business.countryCode, business.phoneNumber].filter(Boolean).join(' ') || 'N/A',
-        status: business?.isDeleted ? 'Inactive' : business?.isVerified ? 'Verified' : 'Unverified',
+        status: business?.isDeleted 
+          ? t('businessTable.statuses.inactive') 
+          : business?.isVerified 
+            ? t('businessTable.statuses.verified') 
+            : t('businessTable.statuses.unverified'),
         plan: business?.isPremium === true || business?.isPremium === 'true' || business?.isPremium === 1 ? 'Premium' : '-',
       })),
-    [businesses]
+    [businesses, t]
   );
 
   const getStatusColor = (status) => {
-    const colors = {
-      'Verified': 'bg-green-100 text-green-800',
-      'Active': 'bg-green-100 text-green-800',
-      'Pending': 'bg-yellow-100 text-yellow-800',
-      'Unverified': 'bg-gray-100 text-gray-800',
-      'Inactive': 'bg-red-100 text-red-800'
-    };
-    return colors[status] || 'bg-gray-100 text-gray-800';
+    // Map translated status back to colors or use fixed keys
+    if (status === t('businessTable.statuses.verified') || status === t('businessTable.statuses.active')) return 'bg-green-100 text-green-800';
+    if (status === t('businessTable.statuses.pending')) return 'bg-yellow-100 text-yellow-800';
+    if (status === t('businessTable.statuses.unverified')) return 'bg-gray-100 text-gray-800';
+    if (status === t('businessTable.statuses.inactive')) return 'bg-red-100 text-red-800';
+    return 'bg-gray-100 text-gray-800';
   };
 
   if (selectedBusiness) {
@@ -345,15 +352,15 @@ const Overview = () => {
       <div className="p-8">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Overview</h1>
+            <h1 className="text-2xl font-bold text-gray-900">{t('title')}</h1>
             <p className="mt-1 text-sm text-gray-500">
-              Live growth analytics for users and payments.
+              {t('subtitle')}
             </p>
           </div>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm">
               <Filter className="h-4 w-4 text-gray-500" />
-              <span className="font-medium">Filter</span>
+              <span className="font-medium">{t('filter')}</span>
               <select
                 className="bg-transparent outline-none"
                 value={selectedPeriod}
@@ -387,7 +394,7 @@ const Overview = () => {
           ))}
         </div>
         {statsStatus === 'loading' ? (
-          <p className="-mt-4 mb-8 text-sm text-gray-500">Updating overview analytics...</p>
+          <p className="-mt-4 mb-8 text-sm text-gray-500">{t('updating')}</p>
         ) : null}
         {statsStatus === 'failed' ? (
           <p className="-mt-4 mb-8 text-sm text-red-500">{statsError}</p>
@@ -404,13 +411,13 @@ const Overview = () => {
             <CardHeader className="pb-4">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <CardTitle className="text-lg font-semibold">Pending Actions</CardTitle>
+                  <CardTitle className="text-lg font-semibold">{t('pendingActions.title')}</CardTitle>
                   <p className="mt-2 text-sm text-gray-500">
-                    Review the most urgent internal tasks waiting for action.
+                    {t('pendingActions.subtitle')}
                   </p>
                 </div>
                 <div className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600">
-                  {pendingActionsData.openCount} open
+                  {pendingActionsData.openCount} {t('pendingActions.open')}
                 </div>
               </div>
             </CardHeader>
@@ -446,15 +453,12 @@ const Overview = () => {
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="text-xs font-medium uppercase tracking-[0.16em] text-gray-400">
-                      Queue status
+                      {t('pendingActions.queueStatus')}
                     </p>
                     <p className="mt-1 text-sm text-gray-600">
                       {pendingActionsData.queueStatus}
                     </p>
                   </div>
-                  {/* <Button variant="ghost" size="sm" className="h-8 px-3 text-sm text-gray-700">
-                    View all
-                  </Button> */}
                 </div>
               </div>
             </CardContent>
@@ -465,12 +469,12 @@ const Overview = () => {
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">Recently Registered Business</CardTitle>
+              <CardTitle className="text-lg">{t('businessTable.title')}</CardTitle>
               <div className="flex items-center space-x-2">
                 <div className="relative">
                   <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                   <Input
-                    placeholder="Search"
+                    placeholder={t('businessTable.search')}
                     className="pl-10 w-64"
                     value={businessSearchTerm}
                     onChange={(event) => setBusinessSearchTerm(event.target.value)}
@@ -484,20 +488,20 @@ const Overview = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Store ID</TableHead>
-                  <TableHead>Business Name</TableHead>
-                  <TableHead>Owner</TableHead>
-                  <TableHead>Employees</TableHead>
-                  <TableHead>Phone Number</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Plan</TableHead>
-                  <TableHead>Action</TableHead>
+                  <TableHead>{t('businessTable.storeId')}</TableHead>
+                  <TableHead>{t('businessTable.businessName')}</TableHead>
+                  <TableHead>{t('businessTable.owner')}</TableHead>
+                  <TableHead>{t('businessTable.employees')}</TableHead>
+                  <TableHead>{t('businessTable.phoneNumber')}</TableHead>
+                  <TableHead>{t('businessTable.status')}</TableHead>
+                  <TableHead>{t('businessTable.plan')}</TableHead>
+                  <TableHead>{t('businessTable.action')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {businessesStatus === 'loading' ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center text-gray-500">Loading businesses...</TableCell>
+                    <TableCell colSpan={8} className="text-center text-gray-500">{t('businessTable.loading')}</TableCell>
                   </TableRow>
                 ) : businessesError ? (
                   <TableRow>
@@ -526,22 +530,22 @@ const Overview = () => {
                             window.history.pushState(null, '', `?id=${business.id}`);
                           }}
                         >
-                          View
+                          {t('businessTable.view')}
                         </Button>
                       </TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center text-gray-500">No businesses found.</TableCell>
+                    <TableCell colSpan={8} className="text-center text-gray-500">{t('businessTable.noData')}</TableCell>
                   </TableRow>
                 )}
               </TableBody>
             </Table>
             <div className="flex items-center justify-between mt-4">
-              <p className="text-sm text-gray-600">Total Business: {pagination?.total || 0}</p>
+              <p className="text-sm text-gray-600">{t('businessTable.total', { count: pagination?.total || 0 })}</p>
               <Button variant="link" className="text-blue-600">
-                See more <ChevronRight className="w-4 h-4 ml-1" />
+                {t('businessTable.seeMore')} <ChevronRight className="w-4 h-4 ml-1" />
               </Button>
             </div>
           </CardContent>

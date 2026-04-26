@@ -1,0 +1,93 @@
+{
+  "Navbar": {
+    "search": "Search",
+    "languages": {
+      "english": "English",
+      "greek": "Greek"
+    },
+    "dashboards": "Dashboards",
+    "overview": "Overview"
+  },
+  "Sidebar": {
+    "dashboard": "Dashboard",
+    "users": "Users",
+    "businessStore": "Business Store",
+    "reward": "Reward",
+    "giftCoupons": "Gift & Coupons",
+    "payment": "Payment",
+    "supportChat": "Support Chat",
+    "notifications": "Notifications",
+    "rolePermission": "Role & Permission",
+    "setting": "Setting",
+    "logout": "Logout",
+    "superAdmin": "Super Admin",
+    "maintainer": "Maintainer",
+    "fullAccess": "Full access",
+    "scopedAccess": "Scoped access",
+    "adminUser": "Admin User",
+    "loggingOut": "Logging out..."
+  },
+  "Overview": {
+    "title": "Overview",
+    "subtitle": "Live growth analytics for users and payments.",
+    "filter": "Filter",
+    "updating": "Updating overview analytics...",
+    "periods": {
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "monthly": "Monthly"
+    },
+    "stats": {
+      "newUsers": "New users",
+      "totalUsers": "Total User",
+      "newBusinesses": "New Businesses",
+      "payments": "Payments"
+    },
+    "pendingActions": {
+      "title": "Pending Actions",
+      "subtitle": "Review the most urgent internal tasks waiting for action.",
+      "open": "open",
+      "queueStatus": "Queue status",
+      "queueStatusSubtitle": "{count} items need review across verification, chat, and reports.",
+      "verification": {
+        "title": "Verification",
+        "subtitle": "{count} stores awaiting verification",
+        "action": "Review"
+      },
+      "supportChat": {
+        "title": "Support Chat",
+        "subtitle": "{count} New Chat",
+        "action": "Respond"
+      },
+      "reports": {
+        "title": "Reports",
+        "subtitle": "{count} new report",
+        "action": "Investigate"
+      }
+    },
+    "businessTable": {
+      "title": "Recently Registered Business",
+      "search": "Search",
+      "storeId": "Store ID",
+      "businessName": "Business Name",
+      "owner": "Owner",
+      "employees": "Employees",
+      "phoneNumber": "Phone Number",
+      "status": "Status",
+      "plan": "Plan",
+      "action": "Action",
+      "loading": "Loading businesses...",
+      "noData": "No businesses found.",
+      "total": "Total Business: {count}",
+      "seeMore": "See more",
+      "view": "View",
+      "statuses": {
+        "verified": "Verified",
+        "active": "Active",
+        "pending": "Pending",
+        "unverified": "Unverified",
+        "inactive": "Inactive"
+      }
+    }
+  }
+}
