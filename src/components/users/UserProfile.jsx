@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/routing';
 import { useDispatch } from 'react-redux';
 import { ChevronLeft, Star, MapPin, Menu, BadgeCheck } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,6 +11,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import BanUserModal from '@/components/modals/BanUserModal';
 import { readStoredAuth, resolveAccessToken } from '@/lib/auth';
 import { createSupportChat, fetchSupportChats, setActiveChat } from '@/redux/supportChatSlice';
+import { useTranslations, useLocale } from 'next-intl';
 
 const getAccessToken = () => resolveAccessToken(readStoredAuth()?.tokens);
 
@@ -29,7 +30,7 @@ const toArray = (value) => {
   return [];
 };
 
-const formatDate = (value, fallback = 'N/A') => {
+const formatDate = (value, locale, fallback = 'N/A') => {
   if (!value) {
     return fallback;
   }
@@ -39,14 +40,14 @@ const formatDate = (value, fallback = 'N/A') => {
     return typeof value === 'string' ? value : fallback;
   }
 
-  return new Intl.DateTimeFormat('en-US', {
+  return new Intl.DateTimeFormat(locale === 'el' ? 'el-GR' : 'en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
   }).format(date);
 };
 
-const formatDateTime = (value, fallback = 'N/A') => {
+const formatDateTime = (value, locale, fallback = 'N/A') => {
   if (!value) {
     return fallback;
   }
@@ -56,7 +57,7 @@ const formatDateTime = (value, fallback = 'N/A') => {
     return typeof value === 'string' ? value : fallback;
   }
 
-  return new Intl.DateTimeFormat('en-US', {
+  return new Intl.DateTimeFormat(locale === 'el' ? 'el-GR' : 'en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
@@ -181,11 +182,11 @@ const classifyActivityCategory = (log) => {
   return 'all';
 };
 
-const mapActivityLogItem = (log, index) => ({
+const mapActivityLogItem = (log, index, locale) => ({
   id: pickFirst(log.id, log._id, `${index}`),
   title: toTitleCase(pickFirst(log.action, log.type, log.event, log.name, 'Activity')),
   description: summarizeLogDescription(log),
-  date: formatDateTime(pickFirst(log.occurredAt, log.createdAt, log.updatedAt)),
+  date: formatDateTime(pickFirst(log.occurredAt, log.createdAt, log.updatedAt), locale),
   category: classifyActivityCategory(log),
 });
 
@@ -198,7 +199,7 @@ const getInitials = (name) => {
     .split(' ')
     .filter(Boolean)
     .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
+    .map((part) => part.charAt(0).toUpperCase())
     .join('') || 'U';
 };
 
@@ -274,6 +275,9 @@ const getBusinessTypeLabel = (business, employment) =>
 export default function UserProfileActivity({ userId }) {
   const dispatch = useDispatch();
   const router = useRouter();
+  const t = useTranslations('UserDetails');
+  const locale = useLocale();
+
   const [activeTab, setActiveTab] = useState('all');
   const [mainTab, setMainTab] = useState('billing');
   const [isBanModalOpen, setIsBanModalOpen] = useState(false);
@@ -442,7 +446,7 @@ export default function UserProfileActivity({ userId }) {
 
         const logs = Array.isArray(rawLogs) ? rawLogs : [];
 
-        setActivityLogs(logs.map(mapActivityLogItem));
+        setActivityLogs(logs.map((log, index) => mapActivityLogItem(log, index, locale)));
         setActivityLogStatus('succeeded');
       } catch (error) {
         if (error?.name === 'AbortError') {
@@ -457,7 +461,7 @@ export default function UserProfileActivity({ userId }) {
     loadActivityLogs();
 
     return () => controller.abort();
-  }, [userId]);
+  }, [userId, locale]);
 
   const profile = useMemo(() => {
     const data = userDetails || {};
@@ -479,7 +483,7 @@ export default function UserProfileActivity({ userId }) {
       data.addressLine
     );
     const roleLabel = pickFirst(data.role, data.userType);
-    const joinedDate = formatDate(pickFirst(data.createdAt, data.joinedAt, data.joinDate), '');
+    const joinedDate = formatDate(pickFirst(data.createdAt, data.joinedAt, data.joinDate), locale, '');
     const statusRaw = pickFirst(
       data.status,
       typeof data.isActive === 'boolean' ? (data.isActive ? 'Active' : 'Inactive') : '',
@@ -515,10 +519,12 @@ export default function UserProfileActivity({ userId }) {
       : pickFirst(data.plan, data.subscription?.plan, data.currentPlan);
     const planStarted = formatDate(
       pickFirst(activeSubscription?.startDate, data.subscription?.startDate, data.planStartDate),
+      locale,
       ''
     );
     const planEnds = formatDate(
       pickFirst(activeSubscription?.endDate, data.subscription?.endDate, data.planEndDate),
+      locale,
       ''
     );
     const ownedBusinesses = toArray(data.ownedBusinesses).map((business) => ({
@@ -572,6 +578,7 @@ export default function UserProfileActivity({ userId }) {
             referral?.updatedAt,
             referral?.date
           ),
+          locale,
           ''
         ),
         tokens: pickFirst(
@@ -623,7 +630,7 @@ export default function UserProfileActivity({ userId }) {
       nameplateBackground,
       nameplateElement,
     };
-  }, [userDetails, userId]);
+  }, [userDetails, userId, locale]);
 
   const statusTone = profile.statusLabel.toLowerCase();
   const statusClassName = statusTone.includes('active')
@@ -649,7 +656,7 @@ export default function UserProfileActivity({ userId }) {
     : [];
   const equippedBadgeImage = BADGE_TIER_IMAGE_MAP[profile.badgeTier] || '/badge.png';
   const nameplateBorderColor = profile.nameplateBorder?.color || '#89BC94';
-  const restrictionActionLabel = profile.isRestricted ? 'Unban' : 'Ban';
+  const restrictionActionLabel = profile.isRestricted ? t('actions.unban') : t('actions.ban');
 
   const handleStartChat = async () => {
     if (!userId || chatLaunchStatus === 'loading') {
@@ -744,7 +751,7 @@ export default function UserProfileActivity({ userId }) {
             }}
           >
             <ChevronLeft className="mr-2 h-4 w-4" />
-            User
+            {t('back')}
           </Button>
 
           {profileStatus === 'failed' ? (
@@ -845,7 +852,7 @@ export default function UserProfileActivity({ userId }) {
                     <div className="flex h-[30px] w-[30px] items-center justify-center rounded-full bg-[#E5F4FD]">
                       <Star className="h-5 w-5 text-[#11293A]" />
                     </div>
-                    <span className="text-sm font-semibold leading-5 text-[#111111]">Rating Summary</span>
+                    <span className="text-sm font-semibold leading-5 text-[#111111]">{t('rating.title')}</span>
                   </div>
                   <div className="w-full">
                     <div className="flex items-center justify-center gap-1">
@@ -862,31 +869,31 @@ export default function UserProfileActivity({ userId }) {
                     </div>
                     {hasValue(profile.rating) ? (
                       <p className="mt-[7px] text-center text-sm font-normal leading-5 text-[#7A7A7A]">
-                        Based on {profile.rating} overall rating
+                        {t('rating.subtitle', { rating: profile.rating })}
                       </p>
                     ) : null}
                   </div>
                 </div>
 
                 <div className="flex flex-col gap-4">
-                  <h3 className="text-[18px] font-semibold leading-7 text-black">Details</h3>
+                  <h3 className="text-[18px] font-semibold leading-7 text-black">{t('details.title')}</h3>
                   <div className="border-t border-[#EBEBEB]" />
                   <div className="space-y-2 text-sm leading-5">
                     {hasValue(profile.fullName) ? (
                       <div className="flex items-start gap-2">
-                        <span className="font-semibold text-black">User name:</span>
+                        <span className="font-semibold text-black">{t('details.userName')}</span>
                         <span className="text-[#7A7A7A]">{profile.fullName}</span>
                       </div>
                     ) : null}
                     {hasValue(profile.email) ? (
                       <div className="flex items-start gap-2">
-                        <span className="font-semibold text-[#11293A]">Email:</span>
+                        <span className="font-semibold text-[#11293A]">{t('details.email')}</span>
                         <span className="min-w-0 break-all text-[#7A7A7A]">{profile.email}</span>
                       </div>
                     ) : null}
                     {hasValue(profile.statusLabel) ? (
                       <div className="flex items-start gap-2">
-                        <span className="font-semibold text-[#11293A]">Status:</span>
+                        <span className="font-semibold text-[#11293A]">{t('details.status')}</span>
                         <span className={statusClassName === 'text-green-600' ? 'text-[#7A7A7A]' : statusClassName}>
                           {profile.statusLabel}
                         </span>
@@ -894,7 +901,7 @@ export default function UserProfileActivity({ userId }) {
                     ) : null}
                     {hasValue(profile.identifier) ? (
                       <div className="flex items-start gap-2">
-                        <span className="font-semibold text-black">ID:</span>
+                        <span className="font-semibold text-black">{t('details.id')}</span>
                         <div className="relative min-w-0">
                           <button
                             type="button"
@@ -929,7 +936,7 @@ export default function UserProfileActivity({ userId }) {
                                 className="fixed z-20 max-w-[220px] rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-700 shadow-lg"
                                 style={userIdPopupPosition}
                               >
-                                Full ID: {profile.identifier}
+                                {t('details.fullId', { id: profile.identifier })}
                               </div>
                             </>
                           ) : null}
@@ -938,25 +945,25 @@ export default function UserProfileActivity({ userId }) {
                     ) : null}
                     {hasValue(profile.phone) ? (
                       <div className="flex items-start gap-2">
-                        <span className="font-semibold text-black">Contact:</span>
+                        <span className="font-semibold text-black">{t('details.contact')}</span>
                         <span className="text-[#7A7A7A]">{profile.phone}</span>
                       </div>
                     ) : null}
                     {hasValue(profile.joinedDate) ? (
                       <div className="flex items-start gap-2">
-                        <span className="font-semibold text-black">Joined Date :</span>
+                        <span className="font-semibold text-black">{t('details.joinedDate')}</span>
                         <span className="text-[#7A7A7A]">{profile.joinedDate}</span>
                       </div>
                     ) : null}
                     {hasValue(profile.language) ? (
                       <div className="flex items-start gap-2">
-                        <span className="font-semibold text-black">Language:</span>
+                        <span className="font-semibold text-black">{t('details.language')}</span>
                         <span className="text-[#7A7A7A]">{profile.language}</span>
                       </div>
                     ) : null}
                     {hasValue(profile.country) ? (
                       <div className="flex items-start gap-2">
-                        <span className="font-semibold text-black">Country:</span>
+                        <span className="font-semibold text-black">{t('details.country')}</span>
                         <span className="text-[#7A7A7A]">{profile.country}</span>
                       </div>
                     ) : null}
@@ -966,7 +973,7 @@ export default function UserProfileActivity({ userId }) {
                 <div className="border-t border-[#EBEBEB]" />
 
                 <div className="flex flex-col gap-4">
-                  <h3 className="text-sm font-bold leading-6 text-[#11293A]">User Business</h3>
+                  <h3 className="text-sm font-bold leading-6 text-[#11293A]">{t('business.title')}</h3>
                   <div className="space-y-2">
                     {profile.businesses.length ? (
                       profile.businesses.map((business) => (
@@ -990,7 +997,7 @@ export default function UserProfileActivity({ userId }) {
                         </div>
                       ))
                     ) : (
-                      <p className="text-sm text-[#7A7A7A]">No businesses found.</p>
+                      <p className="text-sm text-[#7A7A7A]">{t('business.noData')}</p>
                     )}
                   </div>
                 </div>
@@ -1002,7 +1009,7 @@ export default function UserProfileActivity({ userId }) {
                   onClick={handleStartChat}
                   disabled={chatLaunchStatus === 'loading' || profileStatus === 'loading'}
                 >
-                  {chatLaunchStatus === 'loading' ? 'Opening...' : 'Chat'}
+                  {chatLaunchStatus === 'loading' ? t('actions.opening') : t('actions.chat')}
                 </Button>
                 <Button
                   variant="destructive"
@@ -1010,7 +1017,7 @@ export default function UserProfileActivity({ userId }) {
                   onClick={() => setIsBanModalOpen(true)}
                   disabled={restrictionStatus === 'loading'}
                 >
-                  {restrictionStatus === 'loading' ? 'Saving...' : restrictionActionLabel}
+                  {restrictionStatus === 'loading' ? t('actions.saving') : restrictionActionLabel}
                 </Button>
               </div>
               {chatLaunchError ? (
@@ -1022,7 +1029,7 @@ export default function UserProfileActivity({ userId }) {
 
         <div className="lg:col-span-2">
           {profileStatus === 'loading' ? (
-            <p className="mb-4 text-sm text-gray-500">Loading user profile...</p>
+            <p className="mb-4 text-sm text-gray-500">{t('loading')}</p>
           ) : null}
 
           <Tabs value={mainTab} onValueChange={setMainTab} className="mb-6">
@@ -1031,20 +1038,20 @@ export default function UserProfileActivity({ userId }) {
                 value="billing"
                 className="border border-transparent bg-white data-[state=active]:border-2 data-[state=active]:border-[#4FB2FE] data-[state=active]:bg-[#ECF7FE] data-[state=active]:shadow-none"
               >
-                Billing & Plan
+                {t('tabs.billing')}
               </TabsTrigger>
               <TabsTrigger
                 value="account"
                 className="border border-transparent bg-white data-[state=active]:border-2 data-[state=active]:border-[#4FB2FE] data-[state=active]:bg-[#ECF7FE] data-[state=active]:shadow-none"
               >
-                Activity Log
+                {t('tabs.activity')}
               </TabsTrigger>
             </TabsList>
 
             <TabsContent value="account" className="mt-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>User Activity Timeline</CardTitle>
+                  <CardTitle>{t('activity.title')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="mb-6 flex gap-2 overflow-x-auto pb-2">
@@ -1054,7 +1061,7 @@ export default function UserProfileActivity({ userId }) {
                       onClick={() => setActiveTab('all')}
                       className={activeTab === 'all' ? 'bg-[#4FB2F3] hover:bg-[#4FB2F3]' : ''}
                     >
-                      All
+                      {t('activity.filters.all')}
                     </Button>
                     <Button
                       variant={activeTab === 'role' ? 'default' : 'outline'}
@@ -1062,7 +1069,7 @@ export default function UserProfileActivity({ userId }) {
                       onClick={() => setActiveTab('role')}
                       className={activeTab === 'role' ? 'bg-[#4FB2F3] hover:bg-[#4FB2F3]' : ''}
                     >
-                      Role Changes
+                      {t('activity.filters.role')}
                     </Button>
                     <Button
                       variant={activeTab === 'ai' ? 'default' : 'outline'}
@@ -1070,7 +1077,7 @@ export default function UserProfileActivity({ userId }) {
                       onClick={() => setActiveTab('ai')}
                       className={activeTab === 'ai' ? 'bg-[#4FB2F3] hover:bg-[#4FB2F3]' : ''}
                     >
-                      AI Actions
+                      {t('activity.filters.ai')}
                     </Button>
                     <Button
                       variant={activeTab === 'tokens' ? 'default' : 'outline'}
@@ -1078,7 +1085,7 @@ export default function UserProfileActivity({ userId }) {
                       onClick={() => setActiveTab('tokens')}
                       className={activeTab === 'tokens' ? 'bg-[#4FB2F3] hover:bg-[#4FB2F3]' : ''}
                     >
-                      Tokens
+                      {t('activity.filters.tokens')}
                     </Button>
                     <Button
                       variant={activeTab === 'premium' ? 'default' : 'outline'}
@@ -1086,7 +1093,7 @@ export default function UserProfileActivity({ userId }) {
                       onClick={() => setActiveTab('premium')}
                       className={activeTab === 'premium' ? 'bg-[#4FB2F3] hover:bg-[#4FB2F3]' : ''}
                     >
-                      Premium
+                      {t('activity.filters.premium')}
                     </Button>
                     <Button
                       variant={activeTab === 'job' ? 'default' : 'outline'}
@@ -1094,12 +1101,12 @@ export default function UserProfileActivity({ userId }) {
                       onClick={() => setActiveTab('job')}
                       className={activeTab === 'job' ? 'bg-[#4FB2F3] hover:bg-[#4FB2F3]' : ''}
                     >
-                      Job Posts
+                      {t('activity.filters.job')}
                     </Button>
                   </div>
 
                   {activityLogStatus === 'loading' ? (
-                    <p className="mb-4 text-sm text-gray-500">Loading activity logs...</p>
+                    <p className="mb-4 text-sm text-gray-500">{t('activity.loading')}</p>
                   ) : null}
                   {activityLogStatus === 'failed' ? (
                     <p className="mb-4 text-sm text-red-500">{activityLogError}</p>
@@ -1119,7 +1126,7 @@ export default function UserProfileActivity({ userId }) {
                         </div>
                       ))
                     ) : activityLogStatus === 'succeeded' ? (
-                      <p className="text-sm text-gray-500">No activity logs found.</p>
+                      <p className="text-sm text-gray-500">{t('activity.noData')}</p>
                     ) : null}
                   </div>
                 </CardContent>
@@ -1127,7 +1134,7 @@ export default function UserProfileActivity({ userId }) {
 
               <Card className="mt-6">
                 <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle>Referrals</CardTitle>
+                  <CardTitle>{t('referrals.title')}</CardTitle>
                   <Button variant="ghost" size="icon">
                     <Menu className="h-4 w-4" />
                   </Button>
@@ -1137,9 +1144,9 @@ export default function UserProfileActivity({ userId }) {
                     <table className="w-full">
                       <thead>
                         <tr className="border-b">
-                          <th className="px-4 py-3 text-left font-medium text-gray-600">User</th>
-                          <th className="px-4 py-3 text-left font-medium text-gray-600">Date</th>
-                          <th className="px-4 py-3 text-left font-medium text-gray-600">Tokens</th>
+                          <th className="px-4 py-3 text-left font-medium text-gray-600">{t('referrals.table.user')}</th>
+                          <th className="px-4 py-3 text-left font-medium text-gray-600">{t('referrals.table.date')}</th>
+                          <th className="px-4 py-3 text-left font-medium text-gray-600">{t('referrals.table.tokens')}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1169,13 +1176,13 @@ export default function UserProfileActivity({ userId }) {
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Current Plan</CardTitle>
+                    <CardTitle>{t('plan.title')}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div>
-                      <p className="mb-1 text-sm font-medium">Current Plan is {profile.currentPlan}</p>
+                      <p className="mb-1 text-sm font-medium">{t('plan.current', { plan: profile.currentPlan })}</p>
                       <p className="text-sm text-gray-600">
-                        <span className="font-medium">Active :</span> {profile.planStarted} till {profile.planEnds}
+                        <span className="font-medium">{t('plan.active')}</span> {profile.planStarted} {t('plan.till')} {profile.planEnds}
                       </p>
                     </div>
 
@@ -1184,8 +1191,8 @@ export default function UserProfileActivity({ userId }) {
 
                 <Alert className="border-orange-200 bg-orange-50">
                   <AlertDescription>
-                    <p className="mb-1 font-semibold text-orange-700">We need your attention!</p>
-                    <p className="text-sm text-orange-600">This plan requires update</p>
+                    <p className="mb-1 font-semibold text-orange-700">{t('plan.attention')}</p>
+                    <p className="text-sm text-orange-600">{t('plan.updateRequired')}</p>
                   </AlertDescription>
                 </Alert>
               </div>

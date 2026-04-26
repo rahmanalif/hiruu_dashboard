@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import BanBusinessModal from '@/components/modals/BanBusinessModal';
 import { readStoredAuth, resolveAccessToken } from '@/lib/auth';
+import { useTranslations, useLocale } from 'next-intl';
 
 const getAccessToken = () => resolveAccessToken(readStoredAuth()?.tokens);
 
@@ -38,7 +39,7 @@ const toArray = (value) => {
   return [];
 };
 
-const formatDate = (value, fallback = 'N/A') => {
+const formatDate = (value, locale, fallback = 'N/A') => {
   if (!value) {
     return fallback;
   }
@@ -48,14 +49,14 @@ const formatDate = (value, fallback = 'N/A') => {
     return fallback;
   }
 
-  return new Intl.DateTimeFormat('en-US', {
+  return new Intl.DateTimeFormat(locale === 'el' ? 'el-GR' : 'en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
   }).format(date);
 };
 
-const formatDateTime = (value, fallback = 'N/A') => {
+const formatDateTime = (value, locale, fallback = 'N/A') => {
   if (!value) {
     return fallback;
   }
@@ -65,7 +66,7 @@ const formatDateTime = (value, fallback = 'N/A') => {
     return typeof value === 'string' ? value : fallback;
   }
 
-  return new Intl.DateTimeFormat('en-US', {
+  return new Intl.DateTimeFormat(locale === 'el' ? 'el-GR' : 'en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
@@ -93,45 +94,45 @@ const toTitleCase = (value) =>
     .trim()
     .replace(/\b\w/g, (char) => char.toUpperCase());
 
-const getStatusBadge = (business) => {
+const getStatusBadge = (business, t) => {
   if (business?.isDeleted) {
     return {
-      label: 'Inactive',
+      label: t('Overview.businessTable.statuses.inactive'),
       className: 'bg-red-100 text-red-800 border-red-200',
     };
   }
 
   if (business?.isVerified) {
     return {
-      label: 'Verified',
+      label: t('Overview.businessTable.statuses.verified'),
       className: 'bg-green-100 text-green-800 border-green-200',
     };
   }
 
   return {
-    label: 'Unverified',
+    label: t('Overview.businessTable.statuses.unverified'),
     className: 'bg-blue-100 text-blue-800 border-blue-200',
   };
 };
 
-const getPlanDetails = (subscriptions) => {
+const getPlanDetails = (subscriptions, t, locale) => {
   const activeSubscription =
     toArray(subscriptions).find((subscription) => subscription?.status === 'active') || null;
 
   if (!activeSubscription) {
     return {
-      planLabel: 'Free',
+      planLabel: t('BusinessProfile.plan.free'),
       startDate: 'N/A',
       endDate: 'N/A',
-      statusLabel: 'No active subscription',
+      statusLabel: t('BusinessProfile.plan.noSubscription'),
     };
   }
 
   return {
     planLabel: toTitleCase(pickFirst(activeSubscription?.plan?.tier, 'Premium')),
-    startDate: formatDate(activeSubscription?.startDate),
-    endDate: formatDate(activeSubscription?.endDate),
-    statusLabel: `${toTitleCase(activeSubscription?.billingCycle)} billing`,
+    startDate: formatDate(activeSubscription?.startDate, locale),
+    endDate: formatDate(activeSubscription?.endDate, locale),
+    statusLabel: t('BusinessProfile.plan.billingCycle', { cycle: toTitleCase(activeSubscription?.billingCycle) }),
   };
 };
 
@@ -244,15 +245,19 @@ const classifyActivityCategory = (log) => {
   return 'all';
 };
 
-const mapActivityLogItem = (log, index) => ({
+const mapActivityLogItem = (log, index, locale) => ({
   id: pickFirst(log.id, log._id, `${index}`),
   title: toTitleCase(pickFirst(log.action, log.type, log.event, log.name, 'Activity')),
   description: summarizeLogDescription(log),
-  date: formatDateTime(pickFirst(log.occurredAt, log.createdAt, log.updatedAt)),
+  date: formatDateTime(pickFirst(log.occurredAt, log.createdAt, log.updatedAt), locale),
   category: classifyActivityCategory(log),
 });
 
 const BusinessProfile = ({ business, onBack }) => {
+  const t = useTranslations();
+  const tp = useTranslations('BusinessProfile');
+  const locale = useLocale();
+  
   const [activeTab, setActiveTab] = useState('billing');
   const [activityFilter, setActivityFilter] = useState('all');
   const [isBanModalOpen, setIsBanModalOpen] = useState(false);
@@ -395,7 +400,7 @@ const BusinessProfile = ({ business, onBack }) => {
 
         const logs = Array.isArray(rawLogs) ? rawLogs : [];
 
-        setActivityLogs(logs.map(mapActivityLogItem));
+        setActivityLogs(logs.map((log, index) => mapActivityLogItem(log, index, locale)));
         setActivityLogStatus('succeeded');
       } catch (error) {
         if (error?.name === 'AbortError') {
@@ -410,7 +415,7 @@ const BusinessProfile = ({ business, onBack }) => {
     loadActivityLogs();
 
     return () => controller.abort();
-  }, [businessId]);
+  }, [businessId, locale]);
 
   const profile = useMemo(() => {
     const data = businessDetails || business || {};
@@ -420,8 +425,8 @@ const BusinessProfile = ({ business, onBack }) => {
     const roles = toArray(data.roles);
     const recruitments = toArray(data.recruitments);
     const owner = data.owner || {};
-    const planDetails = getPlanDetails(subscriptions);
-    const status = getStatusBadge(data);
+    const planDetails = getPlanDetails(subscriptions, t, locale);
+    const status = getStatusBadge(data, t);
     const totalEmployees = data._count?.employments ?? employments.length;
     const totalJobs = data._count?.recruitments ?? recruitments.length;
     const businessRoles = roles.map((roleItem) => ({
@@ -446,7 +451,7 @@ const BusinessProfile = ({ business, onBack }) => {
       phone: pickFirst([data.countryCode, data.phoneNumber].filter(Boolean).join(' '), business?.phone, 'N/A'),
       email: pickFirst(data.email, owner.email, 'N/A'),
       website: pickFirst(data.website, 'N/A'),
-      joinedDate: formatDate(data.createdAt),
+      joinedDate: formatDate(data.createdAt, locale),
       status,
       ownerName: pickFirst(owner.name, business?.owner, 'N/A'),
       ownerAvatar: pickFirst(owner.avatar, ''),
@@ -465,7 +470,7 @@ const BusinessProfile = ({ business, onBack }) => {
       members,
       socialLinks: data.social || {},
     };
-  }, [business, businessDetails, businessId]);
+  }, [business, businessDetails, businessId, locale, t]);
 
   const filteredActivityLogs = activityLogs.filter(
     (item) => activityFilter === 'all' || item.category === activityFilter
@@ -480,7 +485,7 @@ const BusinessProfile = ({ business, onBack }) => {
           className="mb-4 flex items-center pl-0 text-gray-600 hover:text-gray-900"
         >
           <ChevronLeft className="mr-2 h-4 w-4" />
-          Back to list
+          {tp('back')}
         </Button>
       ) : null}
 
@@ -515,7 +520,7 @@ const BusinessProfile = ({ business, onBack }) => {
                   </div>
                   <div className="flex items-center space-x-2">
                     <span className="rounded-xl border-2 border-[#3EBF5A] px-2 py-1 text-sm font-medium">
-                      Store
+                      {tp('store')}
                     </span>
                     <Badge variant="outline" className={profile.status.className}>
                       {profile.status.label}
@@ -529,22 +534,22 @@ const BusinessProfile = ({ business, onBack }) => {
                   <div className="flex h-[30px] w-[30px] items-center justify-center rounded-full bg-[#E5F4FD]">
                     <Star className="h-5 w-5 text-[#111111]" />
                   </div>
-                  <span className="text-sm font-semibold">Rating Summary</span>
+                  <span className="text-sm font-semibold">{tp('ratingSummary.title')}</span>
                 </div>
                 <div className="grid grid-cols-3 gap-4">
                   {[
                     {
-                      label: 'work environment',
+                      label: tp('ratingSummary.workEnvironment'),
                       value: profile.ratingSummary.workEnvironment,
                       color: '#FBBF24',
                     },
                     {
-                      label: 'pay on time',
+                      label: tp('ratingSummary.payOnTime'),
                       value: profile.ratingSummary.payOnTime,
                       color: '#10B981',
                     },
                     {
-                      label: 'communication',
+                      label: tp('ratingSummary.communication'),
                       value: profile.ratingSummary.communication,
                       color: '#EF4444',
                     },
@@ -573,79 +578,79 @@ const BusinessProfile = ({ business, onBack }) => {
                   ))}
                 </div>
                 <p className="mt-3 text-center text-xs text-gray-500">
-                  Total ratings: {profile.ratingSummary.totalRatings}
+                  {tp('ratingSummary.totalRatings', { count: profile.ratingSummary.totalRatings })}
                 </p>
               </div>
 
               <div className="mb-6">
-                <h3 className="mb-2 text-sm font-semibold">About</h3>
+                <h3 className="mb-2 text-sm font-semibold">{tp('about')}</h3>
                 <p className="text-sm leading-relaxed text-gray-600">{profile.description}</p>
               </div>
 
               <div className="mb-6 space-y-3">
-                <h3 className="mb-3 text-sm font-semibold">Details</h3>
+                <h3 className="mb-3 text-sm font-semibold">{tp('details.title')}</h3>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between gap-4">
-                    <span className="font-medium">Business Name :</span>
+                    <span className="font-medium">{tp('details.businessName')}</span>
                     <span className="text-right text-gray-600">{profile.name}</span>
                   </div>
                   <div className="flex justify-between gap-4">
-                    <span className="font-medium">Location:</span>
+                    <span className="font-medium">{tp('details.location')}</span>
                     <span className="text-right text-gray-600">{profile.location}</span>
                   </div>
                   <div className="flex justify-between gap-4">
-                    <span className="font-medium">Joined Date :</span>
+                    <span className="font-medium">{tp('details.joinedDate')}</span>
                     <span className="text-right text-gray-600">{profile.joinedDate}</span>
                   </div>
                   <div className="flex justify-between gap-4">
-                    <span className="font-medium">Business Status:</span>
+                    <span className="font-medium">{tp('details.status')}</span>
                     <Badge variant="outline" className={profile.status.className}>
                       {profile.status.label}
                     </Badge>
                   </div>
                   <div className="flex justify-between gap-4">
-                    <span className="font-medium">Contact:</span>
+                    <span className="font-medium">{tp('details.contact')}</span>
                     <span className="text-right text-gray-600">{profile.phone}</span>
                   </div>
                   <div className="flex justify-between gap-4">
-                    <span className="font-medium">Email :</span>
+                    <span className="font-medium">{tp('details.email')}</span>
                     <span className="break-all text-right text-xs text-gray-600">{profile.email}</span>
                   </div>
                   <div className="flex justify-between gap-4">
-                    <span className="font-medium">Website:</span>
+                    <span className="font-medium">{tp('details.website')}</span>
                     <span className="break-all text-right text-gray-600">{profile.website}</span>
                   </div>
                   <div className="flex justify-between gap-4">
-                    <span className="font-medium">Owner:</span>
+                    <span className="font-medium">{tp('details.owner')}</span>
                     <span className="text-right text-gray-600">{profile.ownerName}</span>
                   </div>
                 </div>
               </div>
 
               <div className="mb-6">
-                <h3 className="mb-4 text-sm font-semibold">Team & Overview</h3>
+                <h3 className="mb-4 text-sm font-semibold">{tp('overview.title')}</h3>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between py-2">
                     <div className="flex items-center space-x-3">
                       <Users className="h-5 w-5 text-gray-600" />
-                      <span className="text-sm text-gray-600">Total Employee</span>
+                      <span className="text-sm text-gray-600">{tp('overview.totalEmployees')}</span>
                     </div>
                     <span className="font-semibold">{profile.totalEmployees}</span>
                   </div>
                   <div className="flex items-center justify-between py-2">
                     <div className="flex items-center space-x-3">
                       <Briefcase className="h-5 w-5 text-gray-600" />
-                      <span className="text-sm text-gray-600">Active job posting</span>
+                      <span className="text-sm text-gray-600">{tp('overview.activeJobs')}</span>
                     </div>
                     <span className="font-semibold">{profile.totalJobs}</span>
                   </div>
                   <div className="flex items-center justify-between py-2">
                     <div className="flex items-center space-x-3">
                       <UserCheck className="h-5 w-5 text-gray-600" />
-                      <span className="text-sm text-gray-600">Actively Recruiting</span>
+                      <span className="text-sm text-gray-600">{tp('overview.activelyRecruiting')}</span>
                     </div>
                     <Badge className={profile.isRecruiting ? 'bg-green-100 text-green-800 border-green-200' : 'bg-gray-100 text-gray-700 border-gray-200'}>
-                      {profile.isRecruiting ? 'Open' : 'Closed'}
+                      {profile.isRecruiting ? tp('overview.open') : tp('overview.closed')}
                     </Badge>
                   </div>
                 </div>
@@ -653,7 +658,7 @@ const BusinessProfile = ({ business, onBack }) => {
 
               <div>
                 <div className="mb-4 flex items-center justify-between">
-                  <h3 className="text-sm font-semibold">Members</h3>
+                  <h3 className="text-sm font-semibold">{tp('members.title')}</h3>
                   <span className="text-sm text-gray-500">{profile.members.length}</span>
                 </div>
                 <div className="space-y-2">
@@ -668,20 +673,9 @@ const BusinessProfile = ({ business, onBack }) => {
                       </div>
                     ))
                   ) : (
-                    <p className="text-sm text-gray-500">No roles found.</p>
+                    <p className="text-sm text-gray-500">{tp('members.noRoles')}</p>
                   )}
                 </div>
-              </div>
-
-              <div className="mt-6 flex space-x-2">
-                {/* <Button
-                  variant="destructive"
-                  className="flex-1"
-                  onClick={() => setIsBanModalOpen(true)}
-                >
-                  <Ban className="mr-2 h-4 w-4" />
-                  Ban
-                </Button> */}
               </div>
             </CardContent>
           </Card>
@@ -699,7 +693,7 @@ const BusinessProfile = ({ business, onBack }) => {
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
-                  Billing & Plan
+                  {tp('tabs.billing')}
                 </button>
                 <button
                   onClick={() => setActiveTab('account')}
@@ -709,30 +703,30 @@ const BusinessProfile = ({ business, onBack }) => {
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
-                  Activity Log
+                  {tp('tabs.activity')}
                 </button>
               </div>
             </div>
 
             <CardContent className="p-6">
               {profileStatus === 'loading' ? (
-                <p className="text-sm text-gray-500">Loading business profile...</p>
+                <p className="text-sm text-gray-500">{tp('loading')}</p>
               ) : null}
 
               {activeTab === 'account' ? (
                 <div className="space-y-6">
                   <div>
-                    <h2 className="text-xl font-semibold">User Business Activity Timeline</h2>
+                    <h2 className="text-xl font-semibold">{tp('activity.title')}</h2>
                   </div>
 
-                  <div className="flex space-x-2 overflow-x-auto">
+                  <div className="flex space-x-2 overflow-x-auto pb-2">
                     <Button
                       variant={activityFilter === 'all' ? 'default' : 'outline'}
                       size="sm"
                       onClick={() => setActivityFilter('all')}
                       className={activityFilter === 'all' ? 'mr-2 rounded-full border-0 bg-[#4FB2F3] text-white hover:bg-[#4FB2F3]' : 'mr-2 rounded-full'}
                     >
-                      All
+                      {tp('activity.filters.all')}
                     </Button>
                     <Button
                       variant={activityFilter === 'role' ? 'default' : 'outline'}
@@ -740,7 +734,7 @@ const BusinessProfile = ({ business, onBack }) => {
                       onClick={() => setActivityFilter('role')}
                       className={activityFilter === 'role' ? 'mr-2 rounded-full bg-[#4FB2F3] hover:bg-[#4FB2F3]' : 'mr-2 rounded-full'}
                     >
-                      Role Changes
+                      {tp('activity.filters.role')}
                     </Button>
                     <Button
                       variant={activityFilter === 'ai' ? 'default' : 'outline'}
@@ -748,7 +742,7 @@ const BusinessProfile = ({ business, onBack }) => {
                       onClick={() => setActivityFilter('ai')}
                       className={activityFilter === 'ai' ? 'mr-2 rounded-full bg-[#4FB2F3] hover:bg-[#4FB2F3]' : 'mr-2 rounded-full'}
                     >
-                      AI Actions
+                      {tp('activity.filters.ai')}
                     </Button>
                     <Button
                       variant={activityFilter === 'tokens' ? 'default' : 'outline'}
@@ -756,7 +750,7 @@ const BusinessProfile = ({ business, onBack }) => {
                       onClick={() => setActivityFilter('tokens')}
                       className={activityFilter === 'tokens' ? 'mr-2 rounded-full bg-[#4FB2F3] hover:bg-[#4FB2F3]' : 'mr-2 rounded-full'}
                     >
-                      Tokens
+                      {tp('activity.filters.tokens')}
                     </Button>
                     <Button
                       variant={activityFilter === 'premium' ? 'default' : 'outline'}
@@ -764,7 +758,7 @@ const BusinessProfile = ({ business, onBack }) => {
                       onClick={() => setActivityFilter('premium')}
                       className={activityFilter === 'premium' ? 'mr-2 rounded-full bg-[#4FB2F3] hover:bg-[#4FB2F3]' : 'mr-2 rounded-full'}
                     >
-                      Premium
+                      {tp('activity.filters.premium')}
                     </Button>
                     <Button
                       variant={activityFilter === 'job' ? 'default' : 'outline'}
@@ -772,12 +766,12 @@ const BusinessProfile = ({ business, onBack }) => {
                       onClick={() => setActivityFilter('job')}
                       className={activityFilter === 'job' ? 'rounded-full bg-[#4FB2F3] hover:bg-[#4FB2F3]' : 'rounded-full'}
                     >
-                      Job Posts
+                      {tp('activity.filters.job')}
                     </Button>
                   </div>
 
                   {activityLogStatus === 'loading' ? (
-                    <p className="mb-4 text-sm text-gray-500">Loading activity logs...</p>
+                    <p className="mb-4 text-sm text-gray-500">{tp('activity.loading')}</p>
                   ) : null}
                   {activityLogStatus === 'failed' ? (
                     <p className="mb-4 text-sm text-red-500">{activityLogError}</p>
@@ -797,7 +791,7 @@ const BusinessProfile = ({ business, onBack }) => {
                         </div>
                       ))
                     ) : activityLogStatus === 'succeeded' ? (
-                      <p className="text-sm text-gray-500">No activity logs found.</p>
+                      <p className="text-sm text-gray-500">{tp('activity.noData')}</p>
                     ) : null}
                   </div>
                 </div>
@@ -805,11 +799,11 @@ const BusinessProfile = ({ business, onBack }) => {
                 <div className="space-y-6">
                   <Card>
                     <CardContent className="p-6">
-                      <h3 className="mb-4 font-semibold">Current Plan</h3>
+                      <h3 className="mb-4 font-semibold">{tp('plan.title')}</h3>
                       <div className="space-y-2">
-                        <p className="text-sm">Current Plan is {profile.planDetails.planLabel}</p>
+                        <p className="text-sm">{tp('plan.current', { plan: profile.planDetails.planLabel })}</p>
                         <p className="text-sm text-gray-600">
-                          <span className="font-medium">Active :</span> {profile.planDetails.startDate} till {profile.planDetails.endDate}
+                          <span className="font-medium">{tp('plan.active')}</span> {profile.planDetails.startDate} {tp('plan.till')} {profile.planDetails.endDate}
                         </p>
                         <p className="text-sm text-gray-600">{profile.planDetails.statusLabel}</p>
                       </div>
@@ -818,18 +812,18 @@ const BusinessProfile = ({ business, onBack }) => {
 
                   <Card>
                     <CardContent className="p-6">
-                      <h3 className="mb-4 font-semibold">Quick Stats</h3>
+                      <h3 className="mb-4 font-semibold">{tp('quickStats.title')}</h3>
                       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                         <div className="rounded-lg border p-4">
-                          <p className="text-sm text-gray-500">Employees</p>
+                          <p className="text-sm text-gray-500">{tp('quickStats.employees')}</p>
                           <p className="mt-2 text-2xl font-bold">{profile.totalEmployees}</p>
                         </div>
                         <div className="rounded-lg border p-4">
-                          <p className="text-sm text-gray-500">Recruitments</p>
+                          <p className="text-sm text-gray-500">{tp('quickStats.recruitments')}</p>
                           <p className="mt-2 text-2xl font-bold">{profile.totalJobs}</p>
                         </div>
                         <div className="rounded-lg border p-4">
-                          <p className="text-sm text-gray-500">Rating</p>
+                          <p className="text-sm text-gray-500">{tp('quickStats.rating')}</p>
                           <p className="mt-2 text-2xl font-bold">{profile.rating}/5</p>
                         </div>
                       </div>

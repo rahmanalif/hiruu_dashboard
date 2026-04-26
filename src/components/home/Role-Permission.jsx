@@ -7,6 +7,7 @@ import AddMaintainerModal from '@/components/modals/AddMaintainerModal';
 import EditMaintainerModal from '@/components/modals/EditMaintainerModal';
 import { cn } from '@/lib/utils';
 import { readStoredAuth, resolveAccessToken } from '@/lib/auth';
+import { useTranslations } from 'next-intl';
 
 // Table components inline
 const Table = ({ children, className, ...props }) => (
@@ -127,6 +128,7 @@ const getPopupPosition = (triggerRect, popupWidth) => {
 };
 
 const RoleManagement = () => {
+  const t = useTranslations('Roles');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -224,12 +226,12 @@ const RoleManagement = () => {
   return (
     <div className="bg-gray-50 p-8">
       <div className="">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">Role Management</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-6">{t('title')}</h1>
 
         <Card className="gap-0 py-0">
           <CardHeader className="border-b bg-[#ECF7FE] p-4">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg font-semibold text-gray-900">Role & Permission</CardTitle>
+              <CardTitle className="text-lg font-semibold text-gray-900">{t('cardTitle')}</CardTitle>
               <div className="flex items-center space-x-2">
                 
                 <Button 
@@ -240,8 +242,7 @@ const RoleManagement = () => {
                 >
                   
                   <Plus className="w-5 h-5" />
-                  Add Maintainer
-                  {/* <div className='m-2 p-2'>Add Mainterner</div> */}
+                  {t('addMaintainer')}
 
                 </Button>
                 <div className="relative">
@@ -264,7 +265,7 @@ const RoleManagement = () => {
                           className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition-colors ${selectedRole === 'All' ? 'text-blue-600 bg-blue-50/50 font-medium' : 'text-gray-700'}`}
                           onClick={() => { setSelectedRole('All'); setIsFilterOpen(false); }}
                         >
-                          All
+                          {t('all')}
                         </div>
                         {filterOptions.map((role) => (
                           <div 
@@ -287,20 +288,20 @@ const RoleManagement = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[170px]">Employee ID</TableHead>
-                  <TableHead className="w-[88px]">Avatar</TableHead>
-                  <TableHead className="w-[160px]">Name</TableHead>
-                  <TableHead className="w-[220px]">Email</TableHead>
-                  <TableHead className="w-[300px]">Access</TableHead>
-                  <TableHead className="w-[130px]">Role</TableHead>
-                  <TableHead className="w-[120px] text-right">Action</TableHead>
+                  <TableHead className="w-[170px]">{t('table.employeeId')}</TableHead>
+                  <TableHead className="w-[88px]">{t('table.avatar')}</TableHead>
+                  <TableHead className="w-[160px]">{t('table.name')}</TableHead>
+                  <TableHead className="w-[220px]">{t('table.email')}</TableHead>
+                  <TableHead className="w-[300px]">{t('table.access')}</TableHead>
+                  <TableHead className="w-[130px]">{t('table.role')}</TableHead>
+                  <TableHead className="w-[120px] text-right">{t('table.action')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center text-gray-500">
-                      Loading maintainers...
+                      {t('table.loading')}
                     </TableCell>
                   </TableRow>
                 ) : error ? (
@@ -350,7 +351,7 @@ const RoleManagement = () => {
                                 style={employeePopupPosition}
                               >
                                 <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-500">
-                                  Full Employee ID
+                                  {t('table.fullEmployeeId')}
                                 </p>
                                 <p className="break-all text-sm text-gray-900">{employee.id}</p>
                               </div>
@@ -406,7 +407,7 @@ const RoleManagement = () => {
                                 style={accessPopupPosition}
                               >
                                 <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-500">
-                                  Full Access
+                                  {t('table.fullAccess')}
                                 </p>
                                 <p className="break-words text-sm text-gray-900">{employee.access}</p>
                               </div>
@@ -425,7 +426,7 @@ const RoleManagement = () => {
                             setIsEditModalOpen(true);
                           }}
                         >
-                          Edit
+                          {t('table.edit')}
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -433,7 +434,7 @@ const RoleManagement = () => {
                 ) : (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center text-gray-500">
-                      No maintainers found.
+                      {t('table.noData')}
                     </TableCell>
                   </TableRow>
                 )}

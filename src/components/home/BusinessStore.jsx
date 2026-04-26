@@ -9,6 +9,7 @@ import { Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import BusinessProfile from '../buissness/BusinessProfile';
 import { cn } from '@/lib/utils';
 import { fetchBusinessesQuery } from '@/redux/businessesSlice';
+import { useTranslations } from 'next-intl';
 
 const Table = ({ children, className, ...props }) => (
   <div className="w-full overflow-auto">
@@ -40,28 +41,30 @@ const getPopupPosition = (triggerRect, popupWidth) => {
   return { top, left };
 };
 
-const getBusinessStatus = (business) => {
+const getBusinessStatus = (business, t) => {
   if (business?.isDeleted) {
-    return "Inactive";
+    return t('Overview.businessTable.statuses.inactive');
   }
 
-  return business?.isVerified ? "Verified" : "Unverified";
+  return business?.isVerified 
+    ? t('Overview.businessTable.statuses.verified') 
+    : t('Overview.businessTable.statuses.unverified');
 };
 
-const getStatusColor = (status) => {
-  const colors = {
-    Verified: 'bg-green-100 text-green-800 border-green-200',
-    Unverified: 'bg-blue-100 text-blue-800 border-blue-200',
-    Inactive: 'bg-red-100 text-red-800 border-red-200',
-  };
+const getStatusColor = (status, t) => {
+  if (status === t('Overview.businessTable.statuses.verified')) return 'bg-green-100 text-green-800 border-green-200';
+  if (status === t('Overview.businessTable.statuses.unverified')) return 'bg-blue-100 text-blue-800 border-blue-200';
+  if (status === t('Overview.businessTable.statuses.inactive')) return 'bg-red-100 text-red-800 border-red-200';
 
-  return colors[status] || 'bg-gray-100 text-gray-800 border-gray-200';
+  return 'bg-gray-100 text-gray-800 border-gray-200';
 };
 
 const isPremiumPlan = (value) => value === true || value === "true" || value === 1;
 
 const BusinessManagement = () => {
   const dispatch = useDispatch();
+  const t = useTranslations();
+  const tb = useTranslations('Business');
   const { businesses, pagination, status, error } = useSelector((state) => state.businesses);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedBusiness, setSelectedBusiness] = useState(null);
@@ -105,10 +108,10 @@ const BusinessManagement = () => {
         owner: business.owner?.name || 'N/A',
         employees: business._count?.employments || 0,
         phone: [business.countryCode, business.phoneNumber].filter(Boolean).join(' ') || 'N/A',
-        statusLabel: getBusinessStatus(business),
-        plan: isPremiumPlan(business.isPremium) ? 'Premium' : '-',
+        statusLabel: getBusinessStatus(business, t),
+        plan: isPremiumPlan(business.isPremium) ? tb('table.premium') : '-',
       })),
-    [businesses]
+    [businesses, t, tb]
   );
 
   if (selectedBusiness) {
@@ -126,16 +129,16 @@ const BusinessManagement = () => {
   return (
     <div className="bg-gray-50 p-8">
       <div>
-        <h1 className="mb-6 text-2xl font-bold text-gray-900">Business</h1>
+        <h1 className="mb-6 text-2xl font-bold text-gray-900">{tb('title')}</h1>
 
         <Card className="gap-0 py-0">
           <CardHeader className="border-b bg-[#ECF7FE] p-4">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg font-semibold text-gray-900">Registered Business</CardTitle>
+              <CardTitle className="text-lg font-semibold text-gray-900">{tb('registered')}</CardTitle>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
                 <Input
-                  placeholder="Search"
+                  placeholder={tb('search')}
                   className="w-64 bg-white pl-10"
                   value={searchTerm}
                   onChange={(event) => {
@@ -151,21 +154,21 @@ const BusinessManagement = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-24 text-left">Store ID</TableHead>
-                  <TableHead>Business Name</TableHead>
-                  <TableHead>Owner</TableHead>
-                  <TableHead>Employees</TableHead>
-                  <TableHead>Phone Number</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Plan</TableHead>
-                  <TableHead className="text-right">Action</TableHead>
+                  <TableHead className="w-24 text-left">{tb('table.storeId')}</TableHead>
+                  <TableHead>{tb('table.businessName')}</TableHead>
+                  <TableHead>{tb('table.owner')}</TableHead>
+                  <TableHead>{tb('table.employees')}</TableHead>
+                  <TableHead>{tb('table.phoneNumber')}</TableHead>
+                  <TableHead>{tb('table.status')}</TableHead>
+                  <TableHead>{tb('table.plan')}</TableHead>
+                  <TableHead className="text-right">{tb('table.action')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {status === 'loading' ? (
                   <TableRow>
                     <TableCell colSpan={8} className="text-center text-gray-500">
-                      Loading businesses...
+                      {tb('table.loading')}
                     </TableCell>
                   </TableRow>
                 ) : error ? (
@@ -213,7 +216,7 @@ const BusinessManagement = () => {
                                 style={storePopupPosition}
                               >
                                 <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-500">
-                                  Full Store ID
+                                  {tb('table.fullStoreId')}
                                 </p>
                                 <p className="break-all text-sm text-gray-900">{business.id}</p>
                               </div>
@@ -228,7 +231,7 @@ const BusinessManagement = () => {
                       <TableCell>
                         <Badge
                           variant="outline"
-                          className={`${getStatusColor(business.statusLabel)} font-normal`}
+                          className={`${getStatusColor(business.statusLabel, t)} font-normal`}
                         >
                           {business.statusLabel}
                         </Badge>
@@ -244,7 +247,7 @@ const BusinessManagement = () => {
                           }}
                           className="rounded-full px-6 text-blue-600 border-blue-600 hover:bg-blue-50"
                         >
-                          View
+                          {tb('table.view')}
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -252,7 +255,7 @@ const BusinessManagement = () => {
                 ) : (
                   <TableRow>
                     <TableCell colSpan={8} className="text-center text-gray-500">
-                      No businesses found.
+                      {tb('table.noData')}
                     </TableCell>
                   </TableRow>
                 )}
@@ -261,7 +264,11 @@ const BusinessManagement = () => {
 
             <div className="flex items-center justify-between border-t bg-white px-6 py-4">
               <p className="text-sm text-gray-600">
-                Total Business: {pagination?.total || 0} & Pages: {pagination?.page || currentPage}/{pagination?.totalPages || 1}
+                {tb('table.pagination', {
+                  total: pagination?.total || 0,
+                  current: pagination?.page || currentPage,
+                  totalPages: pagination?.totalPages || 1
+                })}
               </p>
               <div className="flex items-center space-x-2">
                 <Button

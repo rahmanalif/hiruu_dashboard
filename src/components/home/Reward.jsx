@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { fetchCoinTransactions } from '@/redux/coinTransactionsSlice';
+import { useTranslations } from 'next-intl';
 
 const Table = ({ children, className, ...props }) => (
   <div className="w-full overflow-auto">
@@ -50,10 +51,13 @@ const getTokenPrefix = (type) => {
   return '';
 };
 
-const formatTypeLabel = (type) => {
+const formatTypeLabel = (type, t) => {
   if (!type) {
     return 'N/A';
   }
+  
+  if (type === 'earned') return t('types.earned');
+  if (type === 'spend') return t('types.spend');
 
   return type.charAt(0).toUpperCase() + type.slice(1);
 };
@@ -73,6 +77,7 @@ const getInitials = (name) => {
 
 const RewardsManagement = () => {
   const dispatch = useDispatch();
+  const t = useTranslations('Rewards');
   const { transactions, pagination, status, error } = useSelector((state) => state.coinTransactions);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
@@ -115,28 +120,28 @@ const RewardsManagement = () => {
         userId: transaction.userId || transaction.user?.id || '',
         avatar: transaction.user?.avatar || '',
         name: transaction.user?.name || 'N/A',
-        type: formatTypeLabel(transaction.type),
+        type: formatTypeLabel(transaction.type, t),
         tokens: `${getTokenPrefix(transaction.type)}${Math.abs(transaction.amount || 0)}`,
         isPositive: transaction.type === 'earned',
         description: transaction.description || 'N/A',
         balance: transaction.balanceAfter ?? 'N/A',
       })),
-    [transactions]
+    [transactions, t]
   );
 
   return (
     <div className="bg-gray-50 p-8">
       <div>
-        <h1 className="mb-6 text-2xl font-bold text-gray-900">Rewards</h1>
+        <h1 className="mb-6 text-2xl font-bold text-gray-900">{t('title')}</h1>
 
         <Card className="gap-0 py-0">
           <CardHeader className="border-b bg-[#ECF7FE] p-4">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg font-semibold text-gray-900">Rewards</CardTitle>
+              <CardTitle className="text-lg font-semibold text-gray-900">{t('title')}</CardTitle>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
                 <Input
-                  placeholder="Search"
+                  placeholder={t('search')}
                   className="w-64 bg-white pl-10"
                   value={searchTerm}
                   onChange={(event) => {
@@ -152,20 +157,20 @@ const RewardsManagement = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Avatar</TableHead>
-                  <TableHead>User ID</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Tokens</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead className="text-right">Balance</TableHead>
+                  <TableHead>{t('table.avatar')}</TableHead>
+                  <TableHead>{t('table.userId')}</TableHead>
+                  <TableHead>{t('table.name')}</TableHead>
+                  <TableHead>{t('table.type')}</TableHead>
+                  <TableHead>{t('table.tokens')}</TableHead>
+                  <TableHead>{t('table.description')}</TableHead>
+                  <TableHead className="text-right">{t('table.balance')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {status === 'loading' ? (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center text-gray-500">
-                      Loading rewards...
+                      {t('table.loading')}
                     </TableCell>
                   </TableRow>
                 ) : error ? (
@@ -227,7 +232,7 @@ const RewardsManagement = () => {
                                 style={userPopupPosition}
                               >
                                 <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-500">
-                                  Full User ID
+                                  {t('table.fullUserId')}
                                 </p>
                                 <p className="break-all text-sm text-gray-900">{reward.userId || 'N/A'}</p>
                               </div>
@@ -249,7 +254,7 @@ const RewardsManagement = () => {
                 ) : (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center text-gray-500">
-                      No rewards found.
+                      {t('table.noData')}
                     </TableCell>
                   </TableRow>
                 )}
@@ -258,7 +263,11 @@ const RewardsManagement = () => {
 
             <div className="flex items-center justify-between border-t bg-white px-6 py-4">
               <p className="text-sm text-gray-600">
-                Total Rewards: {pagination?.total || 0} & Pages: {pagination?.page || currentPage}/{pagination?.totalPages || 1}
+                {t('table.pagination', {
+                  total: pagination?.total || 0,
+                  current: pagination?.page || currentPage,
+                  totalPages: pagination?.totalPages || 1
+                })}
               </p>
               <div className="flex items-center space-x-2">
                 <Button

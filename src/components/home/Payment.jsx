@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { fetchTransactions } from '@/redux/transactionsSlice';
+import { useTranslations } from 'next-intl';
 
 const formatCurrency = (amount, currency) => {
   if (typeof amount !== 'number') {
@@ -57,6 +58,7 @@ const getStatusClasses = (status) => {
 
 const PaymentsTable = () => {
   const dispatch = useDispatch();
+  const t = useTranslations('Payments');
   const { transactions, pagination, status, error } = useSelector((state) => state.transactions);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -75,6 +77,14 @@ const PaymentsTable = () => {
     return () => clearTimeout(timeoutId);
   }, [currentPage, dispatch, searchTerm]);
 
+  const translateStatus = (status, t) => {
+    const key = (status || '').toLowerCase();
+    if (['paid', 'success', 'completed', 'pending', 'failed', 'cancelled'].includes(key)) {
+      return t(`statuses.${key}`);
+    }
+    return status || 'N/A';
+  };
+
   const paymentRows = useMemo(
     () =>
       transactions.map((payment) => ({
@@ -86,27 +96,28 @@ const PaymentsTable = () => {
         method: payment.method ? payment.method.charAt(0).toUpperCase() + payment.method.slice(1) : 'N/A',
         date: formatDate(payment.createdAt),
         status: payment.status || 'N/A',
+        displayStatus: translateStatus(payment.status, t),
       })),
-    [transactions]
+    [transactions, t]
   );
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div>
         <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-2xl font-semibold text-gray-900">Payments</h1>
+          <h1 className="text-2xl font-semibold text-gray-900">{t('title')}</h1>
         </div>
 
         <Card className="gap-0 bg-white py-0">
           <CardContent className="p-0">
             <div className="flex items-center justify-between border-b bg-blue-50 p-4">
-              <h2 className="text-base font-medium text-gray-900">All Payments</h2>
+              <h2 className="text-base font-medium text-gray-900">{t('allPayments')}</h2>
               <div className="flex items-center gap-3">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
                   <Input
                     type="text"
-                    placeholder="Search"
+                    placeholder={t('search')}
                     value={searchTerm}
                     onChange={(event) => {
                       setCurrentPage(1);
@@ -122,20 +133,20 @@ const PaymentsTable = () => {
               <table className="w-full">
                 <thead className="border-b bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">Invoice Number</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">Transaction ID</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">Amounts</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">Use Coupon</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">Payment Method</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">Payment Date</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">{t('table.invoiceNumber')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">{t('table.transactionId')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">{t('table.amounts')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">{t('table.useCoupon')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">{t('table.paymentMethod')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">{t('table.paymentDate')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">{t('table.status')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 bg-white">
                   {status === 'loading' ? (
                     <tr>
                       <td colSpan={7} className="px-6 py-8 text-center text-sm text-gray-500">
-                        Loading payments...
+                        {t('table.loading')}
                       </td>
                     </tr>
                   ) : error ? (
@@ -155,7 +166,7 @@ const PaymentsTable = () => {
                         <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">{payment.date}</td>
                         <td className="whitespace-nowrap px-6 py-4">
                           <Badge variant="secondary" className={`${getStatusClasses(payment.status)} capitalize`}>
-                            {payment.status}
+                            {payment.displayStatus}
                           </Badge>
                         </td>
                       </tr>
@@ -163,7 +174,7 @@ const PaymentsTable = () => {
                   ) : (
                     <tr>
                       <td colSpan={7} className="px-6 py-8 text-center text-sm text-gray-500">
-                        No payments found.
+                        {t('table.noData')}
                       </td>
                     </tr>
                   )}
@@ -173,7 +184,11 @@ const PaymentsTable = () => {
 
             <div className="flex items-center justify-between border-t px-6 py-4">
               <div className="text-sm text-gray-600">
-                Total Payments: {pagination?.total || 0} & Pages: {pagination?.page || currentPage}/{pagination?.totalPages || 1}
+                {t('table.pagination', {
+                  total: pagination?.total || 0,
+                  current: pagination?.page || currentPage,
+                  totalPages: pagination?.totalPages || 1
+                })}
               </div>
               <div className="flex items-center gap-2">
                 <Button

@@ -9,34 +9,35 @@ import { Plus, Search, TrendingUp, TrendingDown, ChevronLeft, ChevronRight } fro
 import CouponWizardModal from '@/components/modals/AddNewOfferModal';
 import ViewCouponModal from '@/components/modals/ViewCoupon';
 import { fetchCoupons } from '@/redux/couponsSlice';
+import { useTranslations } from 'next-intl';
 
-const formatDiscount = (coupon) =>
+const formatDiscount = (coupon, t) =>
   coupon?.discountType === 'percent'
     ? `${coupon.discount}%`
-    : `${coupon.discount} (Fixed)`;
+    : `${coupon.discount} (${t('table.fixed')})`;
 
-const formatExpiry = (value) =>
+const formatExpiry = (value, t) =>
   value
     ? new Date(value).toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
         year: 'numeric',
       })
-    : 'No expiry';
+    : t('table.noExpiry');
 
-const normalizeCoupon = (coupon) => ({
+const normalizeCoupon = (coupon, t) => ({
   id: coupon.id,
   campaign: coupon.name || 'N/A',
   code: coupon.code || 'N/A',
-  discount: formatDiscount(coupon),
+  discount: formatDiscount(coupon, t),
   rawDiscount: coupon.discount,
   discountType: coupon.discountType || 'percent',
-  uses: coupon.limit == null ? 'Unlimited' : String(coupon.limit),
-  target: coupon.target || 'All',
-  expiry: formatExpiry(coupon.expiredAt),
+  uses: coupon.limit == null ? t('table.unlimited') : String(coupon.limit),
+  target: coupon.target || t('table.all'),
+  expiry: formatExpiry(coupon.expiredAt, t),
   expiredAt: coupon.expiredAt || null,
   isActive: Boolean(coupon.isActive),
-  status: coupon.isActive ? 'Active' : 'Inactive',
+  status: coupon.isActive ? t('statuses.active') : t('statuses.inactive'),
 });
 
 const formatMetricValue = (value, { currency = false } = {}) => {
@@ -63,6 +64,7 @@ const formatChange = (value) => {
 
 const GiftsCouponsTable = () => {
   const dispatch = useDispatch();
+  const t = useTranslations('GiftCoupons');
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddOfferModalOpen, setIsAddOfferModalOpen] = useState(false);
   const [isViewCouponModalOpen, setIsViewCouponModalOpen] = useState(false);
@@ -72,7 +74,10 @@ const GiftsCouponsTable = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const { coupons, pagination, metadata, status, error } = useSelector((state) => state.coupons);
 
-  const filterOptions = ['Active', 'Inactive'];
+  const filterOptions = [
+    { label: t('statuses.active'), value: 'Active' },
+    { label: t('statuses.inactive'), value: 'Inactive' }
+  ];
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -89,37 +94,39 @@ const GiftsCouponsTable = () => {
   }, [currentPage, dispatch, searchTerm]);
 
   const normalizedCoupons = useMemo(
-    () => coupons.map((coupon) => normalizeCoupon(coupon)),
-    [coupons]
+    () => coupons.map((coupon) => normalizeCoupon(coupon, t)),
+    [coupons, t]
   );
 
   const filteredCoupons = normalizedCoupons.filter(coupon => {
     if (selectedStatus === 'All') return true;
-    return coupon.status === selectedStatus;
+    // Map translated status back or check isActive
+    const statusKey = coupon.isActive ? 'Active' : 'Inactive';
+    return statusKey === selectedStatus;
   });
 
   const stats = useMemo(
     () => [
       {
-        label: 'Total Redemptions',
+        label: t('stats.totalRedemptions'),
         value: formatMetricValue(metadata?.totalRedemptions?.value),
         change: formatChange(metadata?.totalRedemptions?.changePercentage),
         trending: Number(metadata?.totalRedemptions?.changePercentage || 0) >= 0 ? 'up' : 'down',
       },
       {
-        label: 'Total Revenue',
+        label: t('stats.totalRevenue'),
         value: formatMetricValue(metadata?.totalRevenue?.value, { currency: true }),
         change: formatChange(metadata?.totalRevenue?.changePercentage),
         trending: Number(metadata?.totalRevenue?.changePercentage || 0) >= 0 ? 'up' : 'down',
       },
       {
-        label: 'User Engagement',
+        label: t('stats.userEngagement'),
         value: formatMetricValue(metadata?.userEngagement?.value),
         change: formatChange(metadata?.userEngagement?.changePercentage),
         trending: Number(metadata?.userEngagement?.changePercentage || 0) >= 0 ? 'up' : 'down',
       },
     ],
-    [metadata]
+    [metadata, t]
   );
 
   return (
@@ -127,13 +134,13 @@ const GiftsCouponsTable = () => {
       <div className="">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-semibold text-gray-900">Gifts & Coupons</h1>
+          <h1 className="text-2xl font-semibold text-gray-900">{t('title')}</h1>
           <Button
             className="bg-[#4FB2F3] hover:bg-[#408bbd] text-white"
             onClick={() => setIsAddOfferModalOpen(true)}
           >
             <Plus className="w-4 h-4 mr-2" />
-            Add New Offer
+            {t('addNew')}
           </Button>
         </div>
 
@@ -168,7 +175,7 @@ const GiftsCouponsTable = () => {
                 <div className="mt-6 h-px w-full bg-slate-100" />
 
                 <div className="mt-4 text-xs font-medium uppercase tracking-[0.18em] text-slate-400">
-                  {metadata?.period ? `${metadata.period} snapshot` : 'Current snapshot'}
+                  {metadata?.period ? t('stats.periodSnapshot', { period: metadata.period }) : t('stats.currentSnapshot')}
                 </div>
               </CardContent>
             </Card>
@@ -180,13 +187,13 @@ const GiftsCouponsTable = () => {
           <CardContent className="p-0">
             {/* Table Header */}
             <div className="flex items-center justify-between p-4 border-b">
-              <h2 className="text-lg font-semibold text-gray-900">Gifts & Coupons</h2>
+              <h2 className="text-lg font-semibold text-gray-900">{t('title')}</h2>
               <div className="flex items-center gap-3">
                 <div className="relative">
                   <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                   <Input
                     type="text"
-                    placeholder="Search"
+                    placeholder={t('search')}
                     value={searchTerm}
                     onChange={(e) => {
                       setCurrentPage(1);
@@ -215,15 +222,15 @@ const GiftsCouponsTable = () => {
                           className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition-colors ${selectedStatus === 'All' ? 'text-blue-600 bg-blue-50/50 font-medium' : 'text-gray-700'}`}
                           onClick={() => { setSelectedStatus('All'); setIsFilterOpen(false); }}
                         >
-                          All
+                          {t('table.all')}
                         </div>
-                        {filterOptions.map((status) => (
+                        {filterOptions.map((opt) => (
                           <div 
-                            key={status}
-                            className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition-colors ${selectedStatus === status ? 'text-blue-600 bg-blue-50/50 font-medium' : 'text-gray-700'}`}
-                            onClick={() => { setSelectedStatus(status); setIsFilterOpen(false); }}
+                            key={opt.value}
+                            className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-gray-50 transition-colors ${selectedStatus === opt.value ? 'text-blue-600 bg-blue-50/50 font-medium' : 'text-gray-700'}`}
+                            onClick={() => { setSelectedStatus(opt.value); setIsFilterOpen(false); }}
                           >
-                            {status}
+                            {opt.label}
                           </div>
                         ))}
                       </div>
@@ -238,21 +245,21 @@ const GiftsCouponsTable = () => {
               <table className="w-full">
                 <thead className="bg-gray-50 border-b">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Campaign Name</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Coupon Code</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Discount</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Uses Limit</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Target Audience</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Expiry</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Action</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">{t('table.campaignName')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">{t('table.couponCode')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">{t('table.discount')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">{t('table.usesLimit')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">{t('table.targetAudience')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">{t('table.expiry')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">{t('table.status')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">{t('table.action')}</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {status === 'loading' ? (
                     <tr>
                       <td colSpan={8} className="px-6 py-8 text-center text-sm text-gray-500">
-                        Loading coupons...
+                        {t('table.loading')}
                       </td>
                     </tr>
                   ) : error ? (
@@ -272,8 +279,8 @@ const GiftsCouponsTable = () => {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{coupon.expiry}</td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <Badge
-                            variant={coupon.status === 'Active' ? 'default' : 'secondary'}
-                            className={coupon.status === 'Active' ? 'bg-green-100 text-green-800 hover:bg-green-100' : 'bg-gray-100 text-gray-800 hover:bg-gray-100'}
+                            variant={coupon.isActive ? 'default' : 'secondary'}
+                            className={coupon.isActive ? 'bg-green-100 text-green-800 hover:bg-green-100' : 'bg-gray-100 text-gray-800 hover:bg-gray-100'}
                           >
                             {coupon.status}
                           </Badge>
@@ -288,7 +295,7 @@ const GiftsCouponsTable = () => {
                               setIsViewCouponModalOpen(true);
                             }}
                           >
-                            Edit
+                            {t('table.edit')}
                           </Button>
                         </td>
                       </tr>
@@ -296,7 +303,7 @@ const GiftsCouponsTable = () => {
                   ) : (
                     <tr>
                       <td colSpan={8} className="px-6 py-8 text-center text-sm text-gray-500">
-                        No coupons found.
+                        {t('table.noData')}
                       </td>
                     </tr>
                   )}
@@ -307,7 +314,11 @@ const GiftsCouponsTable = () => {
             {/* Pagination */}
             <div className="flex items-center justify-between px-6 py-4 border-t">
               <div className="text-sm text-gray-600">
-                Total Offer: {pagination?.total || 0} & Pages: {pagination?.page || currentPage}/{pagination?.totalPages || 1}
+                {t('table.pagination', {
+                  total: pagination?.total || 0,
+                  current: pagination?.page || currentPage,
+                  totalPages: pagination?.totalPages || 1
+                })}
               </div>
               <div className="flex items-center gap-2">
                 <Button

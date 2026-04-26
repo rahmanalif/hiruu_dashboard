@@ -89,5 +89,328 @@
         "inactive": "Inactive"
       }
     }
+  },
+  "Users": {
+    "title": "User",
+    "recentlyAdded": "Recently Added User",
+    "search": "Search",
+    "table": {
+      "userId": "User ID",
+      "profileImage": "Profile Image",
+      "userName": "User Name",
+      "email": "Email",
+      "plan": "Plan",
+      "action": "Action",
+      "view": "View",
+      "loading": "Loading users...",
+      "noData": "No users found.",
+      "fullUserId": "Full User ID",
+      "premium": "Premium",
+      "pagination": "Total User: {total} & Pages: {current}/{totalPages}"
+    }
+  },
+  "Business": {
+    "title": "Business",
+    "registered": "Registered Business",
+    "search": "Search",
+    "table": {
+      "storeId": "Store ID",
+      "businessName": "Business Name",
+      "owner": "Owner",
+      "employees": "Employees",
+      "phoneNumber": "Phone Number",
+      "status": "Status",
+      "plan": "Plan",
+      "action": "Action",
+      "view": "View",
+      "loading": "Loading businesses...",
+      "noData": "No businesses found.",
+      "fullStoreId": "Full Store ID",
+      "premium": "Premium",
+      "pagination": "Total Business: {total} & Pages: {current}/{totalPages}"
+    }
+  },
+  "Roles": {
+    "title": "Role Management",
+    "cardTitle": "Role & Permission",
+    "addMaintainer": "Add Maintainer",
+    "all": "All",
+    "table": {
+      "employeeId": "Employee ID",
+      "avatar": "Avatar",
+      "name": "Name",
+      "email": "Email",
+      "access": "Access",
+      "role": "Role",
+      "action": "Action",
+      "edit": "Edit",
+      "loading": "Loading maintainers...",
+      "noData": "No maintainers found.",
+      "fullEmployeeId": "Full Employee ID",
+      "fullAccess": "Full Access"
+    }
+  },
+  "Rewards": {
+    "title": "Rewards",
+    "search": "Search",
+    "table": {
+      "avatar": "Avatar",
+      "userId": "User ID",
+      "name": "Name",
+      "type": "Type",
+      "tokens": "Tokens",
+      "description": "Description",
+      "balance": "Balance",
+      "loading": "Loading rewards...",
+      "noData": "No rewards found.",
+      "fullUserId": "Full User ID",
+      "pagination": "Total Rewards: {total} & Pages: {current}/{totalPages}"
+    },
+    "types": {
+      "earned": "Earned",
+      "spend": "Spend"
+    }
+  },
+  "GiftCoupons": {
+    "title": "Gifts & Coupons",
+    "addNew": "Add New Offer",
+    "search": "Search",
+    "stats": {
+      "totalRedemptions": "Total Redemptions",
+      "totalRevenue": "Total Revenue",
+      "userEngagement": "User Engagement",
+      "periodSnapshot": "{period} snapshot",
+      "currentSnapshot": "Current snapshot"
+    },
+    "table": {
+      "campaignName": "Campaign Name",
+      "couponCode": "Coupon Code",
+      "discount": "Discount",
+      "usesLimit": "Uses Limit",
+      "targetAudience": "Target Audience",
+      "expiry": "Expiry",
+      "status": "Status",
+      "action": "Action",
+      "edit": "Edit",
+      "loading": "Loading coupons...",
+      "noData": "No coupons found.",
+      "unlimited": "Unlimited",
+      "all": "All",
+      "noExpiry": "No expiry",
+      "fixed": "Fixed",
+      "pagination": "Total Offer: {total} & Pages: {current}/{totalPages}"
+    },
+    "statuses": {
+      "active": "Active",
+      "inactive": "Inactive"
+    }
+  },
+  "Payments": {
+    "title": "Payments",
+    "allPayments": "All Payments",
+    "search": "Search",
+    "table": {
+      "invoiceNumber": "Invoice Number",
+      "transactionId": "Transaction ID",
+      "amounts": "Amounts",
+      "useCoupon": "Use Coupon",
+      "paymentMethod": "Payment Method",
+      "paymentDate": "Payment Date",
+      "status": "Status",
+      "loading": "Loading payments...",
+      "noData": "No payments found.",
+      "pagination": "Total Payments: {total} & Pages: {current}/{totalPages}"
+    },
+    "statuses": {
+      "paid": "Paid",
+      "success": "Success",
+      "completed": "Completed",
+      "pending": "Pending",
+      "failed": "Failed",
+      "cancelled": "Cancelled"
+    }
+  },
+  "SupportChat": {
+    "title": "Support Chat",
+    "totalChats": "Total chats: {count}",
+    "loading": "Loading support chats...",
+    "noChats": "No support chats found.",
+    "unknownUser": "Unknown user",
+    "noMessages": "No messages available yet.",
+    "online": "Online",
+    "lastSeen": "Last seen {time}",
+    "archived": "Archived",
+    "open": "Open",
+    "selectChat": "Select a support chat to view details.",
+    "lastActivity": "Last activity {time}",
+    "loadingDetails": "Loading chat details...",
+    "loadingMessages": "Loading messages...",
+    "noMessagesYet": "No messages found for this chat yet.",
+    "noChatSelected": "No support chat selected.",
+    "typeReply": "Type a reply...",
+    "sending": "Sending...",
+    "send": "Send",
+    "about": "About",
+    "joinedChat": "Joined chat: {time}",
+    "totalMessages": "Total messages: {count}",
+    "summary": {
+      "title": "Chat Summary",
+      "unread": "Unread: {count}",
+      "participants": "Participants: {count}",
+      "assignedAdmins": "Assigned admins: {count}",
+      "type": "Type: {type}",
+      "total": "Total messages: {count}",
+      "firstMessage": "First message: {time}",
+      "lastAdminReply": "Last admin reply: {time}"
+    },
+    "participants": "Participants",
+    "noParticipants": "No participants found.",
+    "latestMessage": "Latest Message",
+    "noLatest": "No latest message available."
+  },
+  "Settings": {
+    "title": "Settings",
+    "subtitle": "Manage your account preferences and system configuration",
+    "resetPassword": "Reset Password",
+    "logout": "Logout",
+    "loggingOut": "Logging out...",
+    "pleaseEnter": "Please Enter",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "confirmPassword": "Confirm Password",
+    "changePassword": "Change Password",
+    "weakPassword": "Weak password! Please use a stronger one."
+  },
+  "UserDetails": {
+    "back": "User",
+    "rating": {
+      "title": "Rating Summary",
+      "subtitle": "Based on {rating} overall rating"
+    },
+    "details": {
+      "title": "Details",
+      "userName": "User name:",
+      "email": "Email:",
+      "status": "Status:",
+      "id": "ID:",
+      "contact": "Contact:",
+      "joinedDate": "Joined Date :",
+      "language": "Language:",
+      "country": "Country:",
+      "fullId": "Full ID: {id}"
+    },
+    "business": {
+      "title": "User Business",
+      "noData": "No businesses found."
+    },
+    "actions": {
+      "chat": "Chat",
+      "opening": "Opening...",
+      "ban": "Ban",
+      "unban": "Unban",
+      "saving": "Saving..."
+    },
+    "tabs": {
+      "billing": "Billing & Plan",
+      "activity": "Activity Log"
+    },
+    "activity": {
+      "title": "User Activity Timeline",
+      "loading": "Loading activity logs...",
+      "noData": "No activity logs found.",
+      "filters": {
+        "all": "All",
+        "role": "Role Changes",
+        "ai": "AI Actions",
+        "tokens": "Tokens",
+        "premium": "Premium",
+        "job": "Job Posts"
+      }
+    },
+    "referrals": {
+      "title": "Referrals",
+      "table": {
+        "user": "User",
+        "date": "Date",
+        "tokens": "Tokens"
+      }
+    },
+    "plan": {
+      "title": "Current Plan",
+      "current": "Current Plan is {plan}",
+      "active": "Active :",
+      "till": "till",
+      "attention": "We need your attention!",
+      "updateRequired": "This plan requires update"
+    },
+    "loading": "Loading user profile..."
+  },
+  "BusinessProfile": {
+    "back": "Back to list",
+    "store": "Store",
+    "ratingSummary": {
+      "title": "Rating Summary",
+      "workEnvironment": "work environment",
+      "payOnTime": "pay on time",
+      "communication": "communication",
+      "totalRatings": "Total ratings: {count}"
+    },
+    "about": "About",
+    "details": {
+      "title": "Details",
+      "businessName": "Business Name :",
+      "location": "Location:",
+      "joinedDate": "Joined Date :",
+      "status": "Business Status:",
+      "contact": "Contact:",
+      "email": "Email :",
+      "website": "Website:",
+      "owner": "Owner:"
+    },
+    "overview": {
+      "title": "Team & Overview",
+      "totalEmployees": "Total Employee",
+      "activeJobs": "Active job posting",
+      "activelyRecruiting": "Actively Recruiting",
+      "open": "Open",
+      "closed": "Closed"
+    },
+    "members": {
+      "title": "Members",
+      "noRoles": "No roles found."
+    },
+    "tabs": {
+      "billing": "Billing & Plan",
+      "activity": "Activity Log"
+    },
+    "activity": {
+      "title": "User Business Activity Timeline",
+      "loading": "Loading activity logs...",
+      "noData": "No activity logs found.",
+      "filters": {
+        "all": "All",
+        "role": "Role Changes",
+        "ai": "AI Actions",
+        "tokens": "Tokens",
+        "premium": "Premium",
+        "job": "Job Posts"
+      }
+    },
+    "plan": {
+      "title": "Current Plan",
+      "current": "Current Plan is {plan}",
+      "active": "Active :",
+      "till": "till",
+      "free": "Free",
+      "noSubscription": "No active subscription",
+      "billingCycle": "{cycle} billing"
+    },
+    "quickStats": {
+      "title": "Quick Stats",
+      "employees": "Employees",
+      "recruitments": "Recruitments",
+      "rating": "Rating"
+    },
+    "loading": "Loading business profile..."
   }
 }

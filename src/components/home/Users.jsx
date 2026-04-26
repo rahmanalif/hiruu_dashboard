@@ -6,9 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Search, ChevronLeft, ChevronRight } from 'lucide-react';
-import Link from 'next/link';
+import { Link } from '@/routing';
 import { cn } from '@/lib/utils';
 import { fetchUsersQuery } from '@/redux/usersSlice';
+import { useTranslations } from 'next-intl';
 
 const Table = ({ children, className, ...props }) => (
   <div className="w-full overflow-auto">
@@ -57,6 +58,7 @@ const getPopupPosition = (triggerRect, popupWidth) => {
 
 const UserManagement = () => {
   const dispatch = useDispatch();
+  const t = useTranslations('Users');
   const { users, pagination, status, error } = useSelector((state) => state.users);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
@@ -95,16 +97,16 @@ const UserManagement = () => {
   return (
     <div className="bg-gray-50 p-8">
       <div>
-        <h1 className="mb-6 text-2xl font-bold text-gray-900">User</h1>
+        <h1 className="mb-6 text-2xl font-bold text-gray-900">{t('title')}</h1>
 
         <Card className="gap-0 py-0">
           <CardHeader className="border-b bg-[#ECF7FE] p-4">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg font-semibold text-gray-900">Recently Added User</CardTitle>
+              <CardTitle className="text-lg font-semibold text-gray-900">{t('recentlyAdded')}</CardTitle>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
                 <Input
-                  placeholder="Search"
+                  placeholder={t('search')}
                   className="w-64 bg-white pl-10"
                   value={searchTerm}
                   onChange={(event) => {
@@ -120,19 +122,19 @@ const UserManagement = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-24 text-left">User ID</TableHead>
-                  <TableHead className="w-48 text-left">Profile Image</TableHead>
-                  <TableHead>User Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Plan</TableHead>
-                  <TableHead className="text-right">Action</TableHead>
+                  <TableHead className="w-24 text-left">{t('table.userId')}</TableHead>
+                  <TableHead className="w-48 text-left">{t('table.profileImage')}</TableHead>
+                  <TableHead>{t('table.userName')}</TableHead>
+                  <TableHead>{t('table.email')}</TableHead>
+                  <TableHead>{t('table.plan')}</TableHead>
+                  <TableHead className="text-right">{t('table.action')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {status === 'loading' ? (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center text-gray-500">
-                      Loading users...
+                      {t('table.loading')}
                     </TableCell>
                   </TableRow>
                 ) : error ? (
@@ -180,7 +182,7 @@ const UserManagement = () => {
                                 style={userPopupPosition}
                               >
                                 <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-500">
-                                  Full User ID
+                                  {t('table.fullUserId')}
                                 </p>
                                 <p className="break-all text-sm text-gray-900">{user.id}</p>
                               </div>
@@ -202,7 +204,7 @@ const UserManagement = () => {
                       <TableCell className="text-gray-900">{user.name || 'N/A'}</TableCell>
                       <TableCell className="text-gray-600">{user.email || 'N/A'}</TableCell>
                       <TableCell className="text-gray-900">
-                        {user.isPremium ? 'Premium' : '-'}
+                        {user.isPremium ? t('table.premium') : '-'}
                       </TableCell>
                       <TableCell className="text-right">
                         <Link href={`/users/${user.id}`}>
@@ -211,7 +213,7 @@ const UserManagement = () => {
                             size="sm"
                             className="rounded-full px-6 text-blue-600 border-blue-600 hover:bg-blue-50"
                           >
-                            View
+                            {t('table.view')}
                           </Button>
                         </Link>
                       </TableCell>
@@ -220,7 +222,7 @@ const UserManagement = () => {
                 ) : (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center text-gray-500">
-                      No users found.
+                      {t('table.noData')}
                     </TableCell>
                   </TableRow>
                 )}
@@ -229,7 +231,11 @@ const UserManagement = () => {
 
             <div className="flex items-center justify-between border-t bg-white px-6 py-4">
               <p className="text-sm text-gray-600">
-                Total User: {pagination?.total || 0} & Pages: {pagination?.page || currentPage}/{pagination?.totalPages || 1}
+                {t('table.pagination', {
+                  total: pagination?.total || 0,
+                  current: pagination?.page || currentPage,
+                  totalPages: pagination?.totalPages || 1
+                })}
               </p>
               <div className="flex items-center space-x-2">
                 <Button

@@ -89,5 +89,328 @@
         "inactive": "Ανενεργό"
       }
     }
+  },
+  "Users": {
+    "title": "Χρήστης",
+    "recentlyAdded": "Πρόσφατα Προστιθέμενος Χρήστης",
+    "search": "Αναζήτηση",
+    "table": {
+      "userId": "ID Χρήστη",
+      "profileImage": "Εικόνα Προφίλ",
+      "userName": "Όνομα Χρήστη",
+      "email": "Email",
+      "plan": "Πρόγραμμα",
+      "action": "Ενέργεια",
+      "view": "Προβολή",
+      "loading": "Φόρτωση χρηστών...",
+      "noData": "Δεν βρέθηκαν χρήστες.",
+      "fullUserId": "Πλήρες ID Χρήστη",
+      "premium": "Premium",
+      "pagination": "Σύνολο Χρηστών: {total} & Σελίδες: {current}/{totalPages}"
+    }
+  },
+  "Business": {
+    "title": "Επιχείρηση",
+    "registered": "Εγγεγραμμένη Επιχείρηση",
+    "search": "Αναζήτηση",
+    "table": {
+      "storeId": "ID Καταστήματος",
+      "businessName": "Όνομα Επιχείρησης",
+      "owner": "Ιδιοκτήτης",
+      "employees": "Υπάλληλοι",
+      "phoneNumber": "Αριθμός Τηλεφώνου",
+      "status": "Κατάσταση",
+      "plan": "Πρόγραμμα",
+      "action": "Ενέργεια",
+      "view": "Προβολή",
+      "loading": "Φόρτωση επιχειρήσεων...",
+      "noData": "Δεν βρέθηκαν επιχειρήσεις.",
+      "fullStoreId": "Πλήρες ID Καταστήματος",
+      "premium": "Premium",
+      "pagination": "Σύνολο Επιχειρήσεων: {total} & Σελίδες: {current}/{totalPages}"
+    }
+  },
+  "Roles": {
+    "title": "Διαχείριση Ρόλων",
+    "cardTitle": "Ρόλοι & Άδειες",
+    "addMaintainer": "Προσθήκη Συντηρητή",
+    "all": "Όλοι",
+    "table": {
+      "employeeId": "ID Υπαλλήλου",
+      "avatar": "Avatar",
+      "name": "Όνομα",
+      "email": "Email",
+      "access": "Πρόσβαση",
+      "role": "Ρόλος",
+      "action": "Ενέργεια",
+      "edit": "Επεξεργασία",
+      "loading": "Φόρτωση συντηρητών...",
+      "noData": "Δεν βρέθηκαν συντηρητές.",
+      "fullEmployeeId": "Πλήρες ID Υπαλλήλου",
+      "fullAccess": "Πλήρης Πρόσβαση"
+    }
+  },
+  "Rewards": {
+    "title": "Ανταμοιβές",
+    "search": "Αναζήτηση",
+    "table": {
+      "avatar": "Avatar",
+      "userId": "ID Χρήστη",
+      "name": "Όνομα",
+      "type": "Τύπος",
+      "tokens": "Tokens",
+      "description": "Περιγραφή",
+      "balance": "Υπόλοιπο",
+      "loading": "Φόρτωση ανταμοιβών...",
+      "noData": "Δεν βρέθηκαν ανταμοιβές.",
+      "fullUserId": "Πλήρες ID Χρήστη",
+      "pagination": "Σύνολο Ανταμοιβών: {total} & Σελίδες: {current}/{totalPages}"
+    },
+    "types": {
+      "earned": "Κερδισμένα",
+      "spend": "Εξαργυρωμένα"
+    }
+  },
+  "GiftCoupons": {
+    "title": "Δώρα & Κουπόνια",
+    "addNew": "Προσθήκη Νέας Προσφοράς",
+    "search": "Αναζήτηση",
+    "stats": {
+      "totalRedemptions": "Συνολικές Εξαργυρώσεις",
+      "totalRevenue": "Συνολικά Έσοδα",
+      "userEngagement": "Δέσμευση Χρηστών",
+      "periodSnapshot": "Στιγμιότυπο {period}",
+      "currentSnapshot": "Τρέχον στιγμιότυπο"
+    },
+    "table": {
+      "campaignName": "Όνομα Καμπάνιας",
+      "couponCode": "Κωδικός Κουπονιού",
+      "discount": "Έκπτωση",
+      "usesLimit": "Όριο Χρήσεων",
+      "targetAudience": "Κοινό-Στόχος",
+      "expiry": "Λήξη",
+      "status": "Κατάσταση",
+      "action": "Ενέργεια",
+      "edit": "Επεξεργασία",
+      "loading": "Φόρτωση κουπονιών...",
+      "noData": "Δεν βρέθηκαν κουπόνια.",
+      "unlimited": "Απεριόριστα",
+      "all": "Όλοι",
+      "noExpiry": "Χωρίς λήξη",
+      "fixed": "Σταθερό",
+      "pagination": "Σύνολο Προσφορών: {total} & Σελίδες: {current}/{totalPages}"
+    },
+    "statuses": {
+      "active": "Ενεργό",
+      "inactive": "Ανενεργό"
+    }
+  },
+  "Payments": {
+    "title": "Πληρωμές",
+    "allPayments": "Όλες οι Πληρωμές",
+    "search": "Αναζήτηση",
+    "table": {
+      "invoiceNumber": "Αριθμός Τιμολογίου",
+      "transactionId": "ID Συναλλαγής",
+      "amounts": "Ποσά",
+      "useCoupon": "Χρήση Κουπονιού",
+      "paymentMethod": "Τρόπος Πληρωμής",
+      "paymentDate": "Ημερομηνία Πληρωμής",
+      "status": "Κατάσταση",
+      "loading": "Φόρτωση πληρωμών...",
+      "noData": "Δεν βρέθηκαν πληρωμές.",
+      "pagination": "Σύνολο Πληρωμών: {total} & Σελίδες: {current}/{totalPages}"
+    },
+    "statuses": {
+      "paid": "Πληρώθηκε",
+      "success": "Επιτυχία",
+      "completed": "Ολοκληρώθηκε",
+      "pending": "Σε εκκρεμότητα",
+      "failed": "Αποτυχία",
+      "cancelled": "Ακυρώθηκε"
+    }
+  },
+  "SupportChat": {
+    "title": "Συνομιλία Υποστήριξης",
+    "totalChats": "Συνολικές συνομιλίες: {count}",
+    "loading": "Φόρτωση συνομιλιών υποστήριξης...",
+    "noChats": "Δεν βρέθηκαν συνομιλίες υποστήριξης.",
+    "unknownUser": "Άγνωστος χρήστης",
+    "noMessages": "Δεν υπάρχουν διαθέσιμα μηνύματα ακόμα.",
+    "online": "Σε σύνδεση",
+    "lastSeen": "Τελευταία εμφάνιση {time}",
+    "archived": "Αρχειοθετήθηκε",
+    "open": "Ανοιχτό",
+    "selectChat": "Επιλέξτε μια συνομιλία υποστήριξης για να δείτε λεπτομέρειες.",
+    "lastActivity": "Τελευταία δραστηριότητα {time}",
+    "loadingDetails": "Φόρτωση λεπτομερειών συνομιλίας...",
+    "loadingMessages": "Φόρτωση μηνυμάτων...",
+    "noMessagesYet": "Δεν βρέθηκαν μηνύματα για αυτήν τη συνομιλία ακόμα.",
+    "noChatSelected": "Δεν έχει επιλεγεί συνομιλία υποστήριξης.",
+    "typeReply": "Πληκτρολογήστε μια απάντηση...",
+    "sending": "Αποστολή...",
+    "send": "Αποστολή",
+    "about": "Σχετικά",
+    "joinedChat": "Συμμετοχή στη συνομιλία: {time}",
+    "totalMessages": "Συνολικά μηνύματα: {count}",
+    "summary": {
+      "title": "Περίληψη Συνομιλίας",
+      "unread": "Μη αναγνωσμένα: {count}",
+      "participants": "Συμμετέχοντες: {count}",
+      "assignedAdmins": "Ανατεθειμένοι διαχειριστές: {count}",
+      "type": "Τύπος: {type}",
+      "total": "Συνολικά μηνύματα: {count}",
+      "firstMessage": "Πρώτο μήνυμα: {time}",
+      "lastAdminReply": "Τελευταία απάντηση διαχειριστή: {time}"
+    },
+    "participants": "Συμμετέχοντες",
+    "noParticipants": "Δεν βρέθηκαν συμμετέχοντες.",
+    "latestMessage": "Τελευταίο Μήνυμα",
+    "noLatest": "Δεν υπάρχει διαθέσιμο τελευταίο μήνυμα."
+  },
+  "Settings": {
+    "title": "Ρυθμίσεις",
+    "subtitle": "Διαχειριστείτε τις προτιμήσεις του λογαριασμού σας και τη διαμόρφωση του συστήματος",
+    "resetPassword": "Επαναφορά κωδικού πρόσβασης",
+    "logout": "Αποσύνδεση",
+    "loggingOut": "Αποσύνδεση...",
+    "pleaseEnter": "Παρακαλώ εισάγετε",
+    "currentPassword": "Τρέχων κωδικός πρόσβασης",
+    "newPassword": "Νέος κωδικός πρόσβασης",
+    "confirmPassword": "Επιβεβαίωση κωδικού πρόσβασης",
+    "changePassword": "Αλλαγή κωδικού πρόσβασης",
+    "weakPassword": "Αδύναμος κωδικός πρόσβασης! Παρακαλώ χρησιμοποιήστε έναν ισχυρότερο."
+  },
+  "UserDetails": {
+    "back": "Χρήστης",
+    "rating": {
+      "title": "Περίληψη Βαθμολογίας",
+      "subtitle": "Βασίζεται σε {rating} συνολική βαθμολογία"
+    },
+    "details": {
+      "title": "Λεπτομέρειες",
+      "userName": "Όνομα χρήστη:",
+      "email": "Email:",
+      "status": "Κατάσταση:",
+      "id": "ID:",
+      "contact": "Επικοινωνία:",
+      "joinedDate": "Ημερομηνία εγγραφής:",
+      "language": "Γλώσσα:",
+      "country": "Χώρα:",
+      "fullId": "Πλήρες ID: {id}"
+    },
+    "business": {
+      "title": "Επιχειρήσεις Χρήστη",
+      "noData": "Δεν βρέθηκαν επιχειρήσεις."
+    },
+    "actions": {
+      "chat": "Συνομιλία",
+      "opening": "Άνοιγμα...",
+      "ban": "Αποκλεισμός",
+      "unban": "Άρση αποκλεισμού",
+      "saving": "Αποθήκευση..."
+    },
+    "tabs": {
+      "billing": "Χρέωση & Πρόγραμμα",
+      "activity": "Αρχείο Δραστηριότητας"
+    },
+    "activity": {
+      "title": "Χρονολόγιο Δραστηριότητας Χρήστη",
+      "loading": "Φόρτωση αρχείων δραστηριότητας...",
+      "noData": "Δεν βρέθηκαν αρχεία δραστηριότητας.",
+      "filters": {
+        "all": "Όλα",
+        "role": "Αλλαγές Ρόλων",
+        "ai": "Ενέργειες AI",
+        "tokens": "Tokens",
+        "premium": "Premium",
+        "job": "Αναρτήσεις Θέσεων Εργασίας"
+      }
+    },
+    "referrals": {
+      "title": "Συστάσεις",
+      "table": {
+        "user": "Χρήστης",
+        "date": "Ημερομηνία",
+        "tokens": "Tokens"
+      }
+    },
+    "plan": {
+      "title": "Τρέχον Πρόγραμμα",
+      "current": "Το τρέχον πρόγραμμα είναι {plan}",
+      "active": "Ενεργό :",
+      "till": "έως",
+      "attention": "Χρειαζόμαστε την προσοχή σας!",
+      "updateRequired": "Αυτό το πρόγραμμα απαιτεί ενημέρωση"
+    },
+    "loading": "Φόρτωση προφίλ χρήστη..."
+  },
+  "BusinessProfile": {
+    "back": "Επιστροφή στη λίστα",
+    "store": "Κατάστημα",
+    "ratingSummary": {
+      "title": "Περίληψη Βαθμολογίας",
+      "workEnvironment": "εργασιακό περιβάλλον",
+      "payOnTime": "έγκαιρη πληρωμή",
+      "communication": "επικοινωνία",
+      "totalRatings": "Συνολικές βαθμολογίες: {count}"
+    },
+    "about": "Σχετικά",
+    "details": {
+      "title": "Λεπτομέρειες",
+      "businessName": "Όνομα Επιχείρησης:",
+      "location": "Τοποθεσία:",
+      "joinedDate": "Ημερομηνία εγγραφής:",
+      "status": "Κατάσταση Επιχείρησης:",
+      "contact": "Επικοινωνία:",
+      "email": "Email:",
+      "website": "Ιστότοπος:",
+      "owner": "Ιδιοκτήτης:"
+    },
+    "overview": {
+      "title": "Ομάδα & Επισκόπηση",
+      "totalEmployees": "Σύνολο Υπαλλήλων",
+      "activeJobs": "Ενεργές θέσεις εργασίας",
+      "activelyRecruiting": "Ενεργή Αναζήτηση Προσωπικού",
+      "open": "Ανοιχτό",
+      "closed": "Κλειστό"
+    },
+    "members": {
+      "title": "Μέλη",
+      "noRoles": "Δεν βρέθηκαν ρόλοι."
+    },
+    "tabs": {
+      "billing": "Χρέωση & Πρόγραμμα",
+      "activity": "Αρχείο Δραστηριότητας"
+    },
+    "activity": {
+      "title": "Χρονολόγιο Δραστηριότητας Επιχείρησης",
+      "loading": "Φόρτωση αρχείων δραστηριότητας...",
+      "noData": "Δεν βρέθηκαν αρχεία δραστηριότητας.",
+      "filters": {
+        "all": "Όλα",
+        "role": "Αλλαγές Ρόλων",
+        "ai": "Ενέργειες AI",
+        "tokens": "Tokens",
+        "premium": "Premium",
+        "job": "Αναρτήσεις Θέσεων Εργασίας"
+      }
+    },
+    "plan": {
+      "title": "Τρέχον Πρόγραμμα",
+      "current": "Το τρέχον πρόγραμμα είναι {plan}",
+      "active": "Ενεργό :",
+      "till": "έως",
+      "free": "Δωρεάν",
+      "noSubscription": "Καμία ενεργή συνδρομή",
+      "billingCycle": "{cycle} χρέωση"
+    },
+    "quickStats": {
+      "title": "Γρήγορα Στατιστικά",
+      "employees": "Υπάλληλοι",
+      "recruitments": "Προσλήψεις",
+      "rating": "Βαθμολογία"
+    },
+    "loading": "Φόρτωση προφίλ επιχείρησης..."
   }
 }

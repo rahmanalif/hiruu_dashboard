@@ -32,8 +32,9 @@ import {
 } from "@/redux/supportChatSlice";
 import { getChatSocket, disconnectChatSocket } from "@/lib/chatSocket";
 import { resolveAccessToken } from "@/lib/auth";
+import { useTranslations, useLocale } from 'next-intl';
 
-const formatDateTime = (value) => {
+const formatDateTime = (value, locale) => {
   if (!value) {
     return "N/A";
   }
@@ -43,7 +44,7 @@ const formatDateTime = (value) => {
     return "N/A";
   }
 
-  return new Intl.DateTimeFormat("en-US", {
+  return new Intl.DateTimeFormat(locale === 'el' ? 'el-GR' : 'en-US', {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -52,7 +53,7 @@ const formatDateTime = (value) => {
   }).format(date);
 };
 
-const formatTime = (value) => {
+const formatTime = (value, locale) => {
   if (!value) {
     return "";
   }
@@ -62,7 +63,7 @@ const formatTime = (value) => {
     return "";
   }
 
-  return new Intl.DateTimeFormat("en-US", {
+  return new Intl.DateTimeFormat(locale === 'el' ? 'el-GR' : 'en-US', {
     hour: "numeric",
     minute: "2-digit",
   }).format(date);
@@ -84,6 +85,9 @@ const getInitials = (name) => {
 const ChatMessagingInterface = () => {
   const dispatch = useDispatch();
   const searchParams = useSearchParams();
+  const t = useTranslations('SupportChat');
+  const locale = useLocale();
+  
   const {
     chats,
     pagination,
@@ -258,66 +262,29 @@ const ChatMessagingInterface = () => {
         <div className="p-4 border-b">
           <div className="flex items-center justify-between gap-3 mb-4">
             <div className="flex items-center gap-3">
-              {/* <Button variant="ghost" size="sm" className="p-2">
-                <Menu className="w-5 h-5" />
-              </Button> */}
-              {/* <div className="flex gap-2">
-                <Button
-                  variant={activeFilter === "Open" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setActiveFilter("Open")}
-                  className={activeFilter === "Open" ? "bg-gray-900" : ""}
-                >
-                  Open
-                  {activeFilter === "Open" && <X className="w-3 h-3 ml-1" />}
-                </Button>
-                <Button
-                  variant={activeFilter === "Newest" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setActiveFilter("Newest")}
-                  className={activeFilter === "Newest" ? "bg-gray-900" : ""}
-                >
-                  Newest
-                  {activeFilter === "Newest" && <X className="w-3 h-3 ml-1" />}
-                </Button>
-              </div> */}
             </div>
-            {/* <Button
-              variant="ghost"
-              size="sm"
-              className="p-2"
-              onClick={() => dispatch(fetchSupportChats({ page: 1, limit: 20 }))}
-              disabled={status === "loading"}
-            >
-              <RefreshCw
-                className={`w-4 h-4 ${status === "loading" ? "animate-spin" : ""}`}
-              />
-            </Button> */}
           </div>
           <p className="text-xs text-gray-500">
-            Total chats: {pagination?.total ?? filteredChats.length}
+            {t('totalChats', { count: pagination?.total ?? filteredChats.length })}
           </p>
-          {/* <p className="text-[11px] text-gray-400 mt-1">
-            Socket: {socketStatus}
-          </p> */}
         </div>
 
         <div className="flex-1 overflow-y-auto">
           {status === "loading" && chats.length === 0 ? (
-            <div className="p-4 text-sm text-gray-500">Loading support chats...</div>
+            <div className="p-4 text-sm text-gray-500">{t('loading')}</div>
           ) : null}
 
           {error ? <div className="p-4 text-sm text-red-600">{error}</div> : null}
 
           {status !== "loading" && filteredChats.length === 0 ? (
-            <div className="p-4 text-sm text-gray-500">No support chats found.</div>
+            <div className="p-4 text-sm text-gray-500">{t('noChats')}</div>
           ) : null}
 
           {filteredChats.map((chat) => {
             const isActive = chat.id === activeChat?.id;
-            const userName = chat.user?.name || "Unknown user";
+            const userName = chat.user?.name || t('unknownUser');
             const preview =
-              chat.lastMessage?.content || "No messages available yet.";
+              chat.lastMessage?.content || t('noMessages');
 
             return (
               <button
@@ -338,7 +305,7 @@ const ChatMessagingInterface = () => {
                       {userName}
                     </div>
                     <span className="text-[11px] text-gray-400">
-                      {formatTime(chat.lastMessageAt)}
+                      {formatTime(chat.lastMessageAt, locale)}
                     </span>
                   </div>
                   <div className="text-sm text-gray-500 truncate">{preview}</div>
@@ -365,22 +332,22 @@ const ChatMessagingInterface = () => {
                 </Avatar>
                 <div>
                   <div className="font-semibold text-gray-900">
-                    {activeUser?.name || "Unknown user"}
+                    {activeUser?.name || t('unknownUser')}
                   </div>
                   <div className="text-sm text-green-700">
                     {activeUser?.isOnline
-                      ? "Online"
-                      : `Last seen ${formatDateTime(activeUser?.lastSeen)}`}
+                      ? t('online')
+                      : t('lastSeen', { time: formatDateTime(activeUser?.lastSeen, locale) })}
                   </div>
                 </div>
               </div>
-              <Button className="bg-[#3EBF5A] hover:bg-[#2e8d42] text-white">
+              {/* <Button className="bg-[#3EBF5A] hover:bg-[#2e8d42] text-white">
                 <Check className="w-4 h-4 mr-2" />
-                {activeChat.isArchived ? "Archived" : "Open"}
-              </Button>
+                {activeChat.isArchived ? t('archived') : t('open')}
+              </Button> */}
             </>
           ) : (
-            <div className="text-sm text-gray-600">Select a support chat to view details.</div>
+            <div className="text-sm text-gray-600">{t('selectChat')}</div>
           )}
         </div>
 
@@ -388,12 +355,12 @@ const ChatMessagingInterface = () => {
           {activeChat ? (
             <div className="max-w-3xl mx-auto">
               <div className="text-center text-sm text-gray-500 mb-6">
-                Last activity {formatDateTime(activeChat.lastMessageAt)}
+                {t('lastActivity', { time: formatDateTime(activeChat.lastMessageAt, locale) })}
               </div>
 
               {detailsStatus === "loading" ? (
                 <div className="mb-4 text-sm text-gray-500">
-                  Loading chat details...
+                  {t('loadingDetails')}
                 </div>
               ) : null}
 
@@ -402,7 +369,7 @@ const ChatMessagingInterface = () => {
               ) : null}
 
               {messagesStatus === "loading" ? (
-                <div className="mb-4 text-sm text-gray-500">Loading messages...</div>
+                <div className="mb-4 text-sm text-gray-500">{t('loadingMessages')}</div>
               ) : null}
 
               {messagesError ? (
@@ -447,7 +414,7 @@ const ChatMessagingInterface = () => {
                             {isOwnMessage ? (
                               <CheckCheck className="w-3 h-3 text-blue-500" />
                             ) : null}
-                            <span>{formatTime(chatMessage.createdAt)}</span>
+                            <span>{formatTime(chatMessage.createdAt, locale)}</span>
                           </div>
                         </div>
                       </div>
@@ -457,13 +424,13 @@ const ChatMessagingInterface = () => {
                 </div>
               ) : (
                 <div className="text-sm text-gray-500">
-                  No messages found for this chat yet.
+                  {t('noMessagesYet')}
                 </div>
               )}
             </div>
           ) : (
             <div className="h-full flex items-center justify-center text-sm text-gray-500">
-              No support chat selected.
+              {t('noChatSelected')}
             </div>
           )}
         </div>
@@ -475,7 +442,7 @@ const ChatMessagingInterface = () => {
             </Button>
             <Input
               type="text"
-              placeholder="Type a reply..."
+              placeholder={t('typeReply')}
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               className="flex-1"
@@ -495,7 +462,7 @@ const ChatMessagingInterface = () => {
               disabled={!activeChatId || !message.trim() || sendStatus === "loading"}
               onClick={handleSendMessage}
             >
-              {sendStatus === "loading" ? "Sending..." : "Send"}
+              {sendStatus === "loading" ? t('sending') : t('send')}
               <Send className="w-4 h-4 ml-2" />
             </Button>
           </div>
@@ -517,7 +484,7 @@ const ChatMessagingInterface = () => {
               </Avatar>
               <div>
                 <div className="font-semibold text-gray-900">
-                  {activeUser.name || "Unknown user"}
+                  {activeUser.name || t('unknownUser')}
                 </div>
                 <div className="text-sm text-gray-500">
                   {activeUser.email || "No email provided"}
@@ -525,17 +492,17 @@ const ChatMessagingInterface = () => {
               </div>
             </div>
           ) : (
-            <div className="text-sm text-gray-500">User details will appear here.</div>
+            <div className="text-sm text-gray-500">{t('selectChat')}</div>
           )}
         </div>
 
         <div className="p-6 border-b">
-          <h3 className="font-semibold text-gray-900 mb-4">About</h3>
+          <h3 className="font-semibold text-gray-900 mb-4">{t('about')}</h3>
           <div className="space-y-3">
             <div className="flex items-center gap-3 text-sm">
               <User className="w-4 h-4 text-gray-500" />
               <span className="text-gray-700">
-                {activeUser?.name || "Unknown user"}
+                {activeUser?.name || t('unknownUser')}
               </span>
             </div>
             <div className="flex items-center gap-3 text-sm">
@@ -547,43 +514,39 @@ const ChatMessagingInterface = () => {
             <div className="flex items-center gap-3 text-sm">
               <Calendar className="w-4 h-4 text-gray-500" />
               <span className="text-gray-700">
-                Joined chat: {formatDateTime(activeChat?.createdAt)}
+                {t('joinedChat', { time: formatDateTime(activeChat?.createdAt, locale) })}
               </span>
             </div>
             <div className="flex items-center gap-3 text-sm">
               <MessageSquare className="w-4 h-4 text-gray-500" />
               <span className="text-gray-700">
-                Total messages: {activeChat?.totalMessages ?? 0}
+                {t('totalMessages', { count: activeChat?.totalMessages ?? 0 })}
               </span>
             </div>
           </div>
         </div>
 
         <div className="p-6 border-b">
-          <h3 className="font-semibold text-gray-900 mb-4">Chat Summary</h3>
+          <h3 className="font-semibold text-gray-900 mb-4">{t('summary.title')}</h3>
           <div className="space-y-3 text-sm text-gray-700">
-            <p>Unread: {activeChat?.unreadCount ?? 0}</p>
+            <p>{t('summary.unread', { count: activeChat?.unreadCount ?? 0 })}</p>
             <p>
-              Participants:{" "}
-              {activeChat?.participantCount ??
-                activeChat?.participants?.length ??
-                0}
+              {t('summary.participants', { count: activeChat?.participantCount ?? activeChat?.participants?.length ?? 0 })}
             </p>
-            <p>Assigned admins: {activeChat?.assignedAdmins?.length ?? 0}</p>
-            <p>Type: {activeChat?.type || "support"}</p>
-            <p>Total messages: {activeChat?.stats?.totalMessages ?? 0}</p>
+            <p>{t('summary.assignedAdmins', { count: activeChat?.assignedAdmins?.length ?? 0 })}</p>
+            <p>{t('summary.type', { type: activeChat?.type || "support" })}</p>
+            <p>{t('summary.total', { count: activeChat?.stats?.totalMessages ?? 0 })}</p>
             <p>
-              First message: {formatDateTime(activeChat?.stats?.firstMessageAt)}
+              {t('summary.firstMessage', { time: formatDateTime(activeChat?.stats?.firstMessageAt, locale) })}
             </p>
             <p>
-              Last admin reply:{" "}
-              {formatDateTime(activeChat?.stats?.lastAdminMessageAt)}
+              {t('summary.lastAdminReply', { time: formatDateTime(activeChat?.stats?.lastAdminMessageAt, locale) })}
             </p>
           </div>
         </div>
 
         <div className="p-6 border-b">
-          <h3 className="font-semibold text-gray-900 mb-4">Participants</h3>
+          <h3 className="font-semibold text-gray-900 mb-4">{t('participants')}</h3>
           <div className="space-y-3">
             {(activeChat?.participants || []).length > 0 ? (
               activeChat.participants.map((participant) => (
@@ -599,7 +562,7 @@ const ChatMessagingInterface = () => {
                   </Avatar>
                   <div>
                     <div className="font-medium text-gray-900">
-                      {participant.user?.name || "Unknown user"}
+                      {participant.user?.name || t('unknownUser')}
                     </div>
                     <div className="text-xs text-gray-500">
                       {participant.user?.role || participant.role} · unread{" "}
@@ -609,15 +572,15 @@ const ChatMessagingInterface = () => {
                 </div>
               ))
             ) : (
-              <p className="text-sm text-gray-500">No participants found.</p>
+              <p className="text-sm text-gray-500">{t('noParticipants')}</p>
             )}
           </div>
         </div>
 
         <div className="p-6">
-          <h3 className="font-semibold text-gray-900 mb-4">Latest Message</h3>
+          <h3 className="font-semibold text-gray-900 mb-4">{t('latestMessage')}</h3>
           <div className="text-sm text-gray-600">
-            {lastMessage?.content || "No latest message available."}
+            {lastMessage?.content || t('noLatest')}
           </div>
         </div>
       </div>
