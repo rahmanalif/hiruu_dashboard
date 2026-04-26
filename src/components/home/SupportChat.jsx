@@ -258,10 +258,10 @@ const ChatMessagingInterface = () => {
         <div className="p-4 border-b">
           <div className="flex items-center justify-between gap-3 mb-4">
             <div className="flex items-center gap-3">
-              <Button variant="ghost" size="sm" className="p-2">
+              {/* <Button variant="ghost" size="sm" className="p-2">
                 <Menu className="w-5 h-5" />
-              </Button>
-              <div className="flex gap-2">
+              </Button> */}
+              {/* <div className="flex gap-2">
                 <Button
                   variant={activeFilter === "Open" ? "default" : "ghost"}
                   size="sm"
@@ -280,9 +280,9 @@ const ChatMessagingInterface = () => {
                   Newest
                   {activeFilter === "Newest" && <X className="w-3 h-3 ml-1" />}
                 </Button>
-              </div>
+              </div> */}
             </div>
-            <Button
+            {/* <Button
               variant="ghost"
               size="sm"
               className="p-2"
@@ -292,14 +292,14 @@ const ChatMessagingInterface = () => {
               <RefreshCw
                 className={`w-4 h-4 ${status === "loading" ? "animate-spin" : ""}`}
               />
-            </Button>
+            </Button> */}
           </div>
           <p className="text-xs text-gray-500">
             Total chats: {pagination?.total ?? filteredChats.length}
           </p>
-          <p className="text-[11px] text-gray-400 mt-1">
+          {/* <p className="text-[11px] text-gray-400 mt-1">
             Socket: {socketStatus}
-          </p>
+          </p> */}
         </div>
 
         <div className="flex-1 overflow-y-auto">

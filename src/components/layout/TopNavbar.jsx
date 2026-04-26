@@ -1,11 +1,37 @@
 "use client";
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, Bell, Star, Languages } from 'lucide-react';
 import Link from 'next/link';
+import { fetchAdminNotifications } from '@/redux/notificationsSlice';
+
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+const isNotificationRead = (notification) =>
+  Boolean(notification?.readAt || notification?.isRead || notification?.read);
 
 const TopNavbar = ({ breadcrumbs = [] }) => {
+  const dispatch = useDispatch();
+  const { notifications, status } = useSelector((state) => state.notifications);
+
+  useEffect(() => {
+    if (status === 'idle') {
+      dispatch(fetchAdminNotifications());
+    }
+  }, [dispatch, status]);
+
+  const hasUnreadNotifications = notifications.some(
+    (notification) => !isNotificationRead(notification)
+  );
+
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-3">
       <div className="flex items-center justify-between">
@@ -38,13 +64,24 @@ const TopNavbar = ({ breadcrumbs = [] }) => {
 
         {/* Right side - Language, Notification, and Search */}
         <div className="flex items-center space-x-2">
-          <Button variant="ghost" size="icon" className="h-8 w-8">
-            <Languages className="w-5 h-5 text-gray-600" />
-          </Button>
+          <Select defaultValue="english">
+            <SelectTrigger className="h-8 border-none shadow-none focus:ring-0 w-auto px-2 hover:bg-gray-100">
+              <div className="flex items-center space-x-2">
+                <Languages className="w-5 h-5 text-gray-600" />
+                <SelectValue placeholder="Language" />
+              </div>
+            </SelectTrigger>
+            <SelectContent align="end">
+              <SelectItem value="english">English</SelectItem>
+              <SelectItem value="greek">Greek</SelectItem>
+            </SelectContent>
+          </Select>
           <Link href="/notifications">
             <Button variant="ghost" size="icon" className="h-8 w-8 relative">
               <Bell className="w-5 h-5 text-gray-600" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+              {hasUnreadNotifications ? (
+                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
+              ) : null}
             </Button>
           </Link>
           <div className="relative ml-2">
