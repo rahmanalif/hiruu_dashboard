@@ -379,6 +379,13 @@
       "title": "Μέλη",
       "noRoles": "Δεν βρέθηκαν ρόλοι."
     },
+    "verify": {
+      "button": "Verify Business",
+      "unverify": "Unverify Business",
+      "verifying": "Verifying...",
+      "unverifying": "Unverifying...",
+      "verified": "Business Verified"
+    },
     "tabs": {
       "billing": "Χρέωση & Πρόγραμμα",
       "activity": "Αρχείο Δραστηριότητας"

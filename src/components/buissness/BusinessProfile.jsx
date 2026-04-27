@@ -17,6 +17,7 @@ import {
   Calendar,
   Crown,
   Star,
+  CheckCircle2,
 } from 'lucide-react';
 import BanBusinessModal from '@/components/modals/BanBusinessModal';
 import { readStoredAuth, resolveAccessToken } from '@/lib/auth';
@@ -264,9 +265,12 @@ const BusinessProfile = ({ business, onBack }) => {
   const [profileStatus, setProfileStatus] = useState('idle');
   const [profileError, setProfileError] = useState('');
   const [businessDetails, setBusinessDetails] = useState(null);
+  const [profileRefreshKey, setProfileRefreshKey] = useState(0);
   const [activityLogStatus, setActivityLogStatus] = useState('idle');
   const [activityLogError, setActivityLogError] = useState('');
   const [activityLogs, setActivityLogs] = useState([]);
+  const [verifyStatus, setVerifyStatus] = useState('idle');
+  const [verifyError, setVerifyError] = useState('');
 
   const businessId = pickFirst(business?.id, business?._id);
 
@@ -335,7 +339,7 @@ const BusinessProfile = ({ business, onBack }) => {
     loadBusiness();
 
     return () => controller.abort();
-  }, [businessId]);
+  }, [businessId, profileRefreshKey]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -469,8 +473,64 @@ const BusinessProfile = ({ business, onBack }) => {
       roles: businessRoles,
       members,
       socialLinks: data.social || {},
+      isVerified: Boolean(data.isVerified),
     };
   }, [business, businessDetails, businessId, locale, t]);
+
+  const handleToggleBusinessVerification = async () => {
+    if (!businessId || verifyStatus === 'loading') {
+      return;
+    }
+
+    const nextVerificationState = !profile.isVerified;
+    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+    const accessToken = getAccessToken();
+
+    if (!baseUrl) {
+      setVerifyStatus('failed');
+      setVerifyError('Missing NEXT_PUBLIC_API_BASE_URL');
+      return;
+    }
+
+    if (!accessToken) {
+      setVerifyStatus('failed');
+      setVerifyError('Missing access token');
+      return;
+    }
+
+    setVerifyStatus('loading');
+    setVerifyError('');
+
+    try {
+      const response = await fetch(`${baseUrl}/business/${businessId}/verification`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ isVerified: nextVerificationState }),
+      });
+
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok || payload?.success === false) {
+        throw new Error(payload?.message || 'Failed to verify business');
+      }
+
+      const updatedBusiness = payload?.data || payload?.business || payload;
+
+      setBusinessDetails((current) => ({
+        ...(current || business || {}),
+        ...(updatedBusiness && typeof updatedBusiness === 'object' ? updatedBusiness : {}),
+        isVerified: nextVerificationState,
+      }));
+      setVerifyStatus('succeeded');
+      setProfileRefreshKey((current) => current + 1);
+    } catch (error) {
+      setVerifyStatus('failed');
+      setVerifyError(error?.message || 'Failed to verify business');
+    }
+  };
 
   const filteredActivityLogs = activityLogs.filter(
     (item) => activityFilter === 'all' || item.category === activityFilter
@@ -676,6 +736,31 @@ const BusinessProfile = ({ business, onBack }) => {
                     <p className="text-sm text-gray-500">{tp('members.noRoles')}</p>
                   )}
                 </div>
+              </div>
+
+              <div className="mt-6 border-t pt-6">
+                {verifyError ? (
+                  <p className="mb-3 text-sm text-red-600">{verifyError}</p>
+                ) : null}
+                <Button
+                  type="button"
+                  onClick={handleToggleBusinessVerification}
+                  disabled={verifyStatus === 'loading'}
+                  className={`h-11 w-full rounded-lg text-sm font-semibold text-white ${
+                    profile.isVerified
+                      ? 'bg-red-500 hover:bg-red-600'
+                      : 'bg-[#4FB2F3] hover:bg-[#2F9FE8]'
+                  }`}
+                >
+                  <CheckCircle2 className="h-4 w-4" />
+                  {verifyStatus === 'loading'
+                    ? profile.isVerified
+                      ? tp('verify.unverifying')
+                      : tp('verify.verifying')
+                    : profile.isVerified
+                      ? tp('verify.unverify')
+                      : tp('verify.button')}
+                </Button>
               </div>
             </CardContent>
           </Card>

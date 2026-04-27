@@ -379,6 +379,13 @@
       "title": "Members",
       "noRoles": "No roles found."
     },
+    "verify": {
+      "button": "Verify Business",
+      "unverify": "Unverify Business",
+      "verifying": "Verifying...",
+      "unverifying": "Unverifying...",
+      "verified": "Business Verified"
+    },
     "tabs": {
       "billing": "Billing & Plan",
       "activity": "Activity Log"
