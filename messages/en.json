@@ -253,6 +253,8 @@
     "typeReply": "Type a reply...",
     "sending": "Sending...",
     "send": "Send",
+    "sent": "Sent",
+    "seen": "Seen",
     "about": "About",
     "joinedChat": "Joined chat: {time}",
     "totalMessages": "Total messages: {count}",

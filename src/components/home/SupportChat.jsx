@@ -28,6 +28,8 @@ import {
   markSupportChatRoomRead,
   sendSupportChatMessage,
   appendIncomingMessage,
+  applyMessageReadReceipt,
+  updateUserPresence,
   setActiveChat,
 } from "@/redux/supportChatSlice";
 import { getChatSocket, disconnectChatSocket } from "@/lib/chatSocket";
@@ -119,6 +121,46 @@ const isImageAttachment = (attachment) => {
   return type === 'image' || mimeType.startsWith('image/');
 };
 
+const formatFileSize = (size) => {
+  const numericSize = Number(size);
+  if (!Number.isFinite(numericSize) || numericSize <= 0) {
+    return "";
+  }
+
+  if (numericSize < 1024) {
+    return `${numericSize} B`;
+  }
+
+  if (numericSize < 1024 * 1024) {
+    return `${(numericSize / 1024).toFixed(1)} KB`;
+  }
+
+  return `${(numericSize / (1024 * 1024)).toFixed(1)} MB`;
+};
+
+const getOutgoingMessageStatus = (chatMessage, currentUserId) => {
+  const receipts = Array.isArray(chatMessage?.readReceipts) ? chatMessage.readReceipts : [];
+  const seenByOthers = receipts.some((receipt) => receipt?.userId && receipt.userId !== currentUserId);
+
+  if (seenByOthers) {
+    return "seen";
+  }
+
+  return chatMessage?.status === "sent" ? "sent" : "pending";
+};
+
+const isUserOnline = (user) => {
+  if (!user) {
+    return false;
+  }
+
+  if (typeof user.isOnline === "boolean") {
+    return user.isOnline;
+  }
+
+  return false;
+};
+
 const ChatMessagingInterface = () => {
   const dispatch = useDispatch();
   const searchParams = useSearchParams();
@@ -144,8 +186,10 @@ const ChatMessagingInterface = () => {
   const [message, setMessage] = useState("");
   const [activeFilter, setActiveFilter] = useState("Open");
   const [socketStatus, setSocketStatus] = useState("disconnected");
+  const [selectedFiles, setSelectedFiles] = useState([]);
   const messagesEndRef = useRef(null);
   const socketRef = useRef(null);
+  const fileInputRef = useRef(null);
   const requestedChatId = searchParams.get("chatId");
 
   useEffect(() => {
@@ -182,12 +226,49 @@ const ChatMessagingInterface = () => {
 
     const handleNewMessage = (payload) => {
       dispatch(appendIncomingMessage(payload));
+      dispatch(fetchSupportChats({ page: 1, limit: 20 }));
+    };
+
+    const handleMessageRead = (payload) => {
+      dispatch(
+        applyMessageReadReceipt({
+          chatRoomId: payload?.chatRoomId,
+          messageId: payload?.messageId,
+          userId: payload?.userId,
+          userName: payload?.userName,
+          userAvatar: payload?.userAvatar,
+          readAt: payload?.readAt,
+        })
+      );
+    };
+
+    const handleUserOnline = (payload) => {
+      dispatch(
+        updateUserPresence({
+          userId: payload?.userId,
+          isOnline: true,
+          lastSeen: null,
+        })
+      );
+    };
+
+    const handleUserOffline = (payload) => {
+      dispatch(
+        updateUserPresence({
+          userId: payload?.userId,
+          isOnline: false,
+          lastSeen: payload?.lastSeen || new Date().toISOString(),
+        })
+      );
     };
 
     socket.on("connect", handleConnect);
     socket.on("disconnect", handleDisconnect);
     socket.on("connect_error", handleConnectError);
     socket.on("new_message", handleNewMessage);
+    socket.on("message_read", handleMessageRead);
+    socket.on("user_online", handleUserOnline);
+    socket.on("user_offline", handleUserOffline);
 
     if (socket.connected) {
       handleConnect();
@@ -198,6 +279,9 @@ const ChatMessagingInterface = () => {
       socket.off("disconnect", handleDisconnect);
       socket.off("connect_error", handleConnectError);
       socket.off("new_message", handleNewMessage);
+      socket.off("message_read", handleMessageRead);
+      socket.off("user_online", handleUserOnline);
+      socket.off("user_offline", handleUserOffline);
     };
   }, [activeChatId, authTokens, dispatch]);
 
@@ -209,6 +293,7 @@ const ChatMessagingInterface = () => {
 
       if (socketRef.current?.connected) {
         socketRef.current.emit("join_chat", { chatRoomId: activeChatId });
+        socketRef.current.emit("mark_as_read", { chatRoomId: activeChatId });
       }
     }
   }, [activeChatId, dispatch]);
@@ -274,20 +359,31 @@ const ChatMessagingInterface = () => {
   }, [orderedMessages]);
 
   const handleSendMessage = async () => {
-    if (!activeChatId || !message.trim() || sendStatus === "loading") {
+    if (!activeChatId || (!message.trim() && !selectedFiles.length) || sendStatus === "loading") {
       return;
+    }
+
+    const primaryFile = selectedFiles[0];
+    let messageType = "text";
+    if (primaryFile) {
+      messageType = primaryFile.type?.startsWith("image/") ? "image" : "file";
     }
 
     const result = await dispatch(
       sendSupportChatMessage({
         chatId: activeChatId,
         content: message,
-        type: "text",
+        type: messageType,
+        mediaFiles: selectedFiles,
       })
     );
 
     if (sendSupportChatMessage.fulfilled.match(result)) {
       setMessage("");
+      setSelectedFiles([]);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
       dispatch(fetchSupportChatMessages({ chatId: activeChatId, params: { page: 1, limit: 50 } }));
       dispatch(fetchSupportChats({ page: 1, limit: 20 }));
     }
@@ -321,6 +417,7 @@ const ChatMessagingInterface = () => {
             const isActive = chat.id === activeChat?.id;
             const userName = chat.user?.name || t('unknownUser');
             const preview = getMessagePreview(chat.lastMessage, t);
+            const userOnline = isUserOnline(chat.user);
 
             return (
               <button
@@ -331,10 +428,17 @@ const ChatMessagingInterface = () => {
                   isActive ? "bg-blue-50" : "hover:bg-gray-50"
                 }`}
               >
-                <Avatar className="w-10 h-10">
-                  <AvatarImage src={chat.user?.avatar || ""} />
-                  <AvatarFallback>{getInitials(userName)}</AvatarFallback>
-                </Avatar>
+                <div className="relative">
+                  <Avatar className="w-10 h-10">
+                    <AvatarImage src={chat.user?.avatar || ""} />
+                    <AvatarFallback>{getInitials(userName)}</AvatarFallback>
+                  </Avatar>
+                  <span
+                    className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white ${
+                      userOnline ? "bg-green-500" : "bg-gray-300"
+                    }`}
+                  />
+                </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
                     <div className="font-medium text-sm text-gray-900 truncate">
@@ -371,7 +475,7 @@ const ChatMessagingInterface = () => {
                     {activeUser?.name || t('unknownUser')}
                   </div>
                   <div className="text-sm text-green-700">
-                    {activeUser?.isOnline
+                    {isUserOnline(activeUser)
                       ? t('online')
                       : t('lastSeen', { time: formatDateTime(activeUser?.lastSeen, locale) })}
                   </div>
@@ -417,6 +521,9 @@ const ChatMessagingInterface = () => {
                   {orderedMessages.map((chatMessage) => {
                     const isOwnMessage = chatMessage.senderId === currentUser?.id;
                     const attachments = getMessageAttachments(chatMessage);
+                    const outgoingStatus = isOwnMessage
+                      ? getOutgoingMessageStatus(chatMessage, currentUser?.id)
+                      : null;
 
                     return (
                       <div
@@ -510,7 +617,16 @@ const ChatMessagingInterface = () => {
                           </div>
                           <div className="flex items-center gap-1 mt-1 text-xs text-gray-500">
                             {isOwnMessage ? (
-                              <CheckCheck className="w-3 h-3 text-blue-500" />
+                              outgoingStatus === "seen" ? (
+                                <CheckCheck className="w-3 h-3 text-blue-500" />
+                              ) : (
+                                <Check className="w-3 h-3 text-gray-400" />
+                              )
+                            ) : null}
+                            {isOwnMessage ? (
+                              <span className={outgoingStatus === "seen" ? "text-blue-500" : "text-gray-400"}>
+                                {outgoingStatus === "seen" ? t("seen") : t("sent")}
+                              </span>
                             ) : null}
                             <span>{formatTime(chatMessage.createdAt, locale)}</span>
                           </div>
@@ -534,8 +650,55 @@ const ChatMessagingInterface = () => {
         </div>
 
         <div className="border-t p-4">
+          {selectedFiles.length ? (
+            <div className="max-w-3xl mx-auto mb-3 flex flex-wrap gap-2">
+              {selectedFiles.map((file) => (
+                <div
+                  key={`${file.name}-${file.lastModified}`}
+                  className="flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs text-gray-700"
+                >
+                  <Paperclip className="h-3.5 w-3.5" />
+                  <span className="max-w-40 truncate">{file.name}</span>
+                  {formatFileSize(file.size) ? <span className="text-gray-400">{formatFileSize(file.size)}</span> : null}
+                  <button
+                    type="button"
+                    className="text-gray-400 hover:text-gray-700"
+                    onClick={() => {
+                      setSelectedFiles((currentFiles) =>
+                        currentFiles.filter(
+                          (currentFile) =>
+                            !(
+                              currentFile.name === file.name &&
+                              currentFile.lastModified === file.lastModified
+                            )
+                        )
+                      );
+                    }}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : null}
           <div className="flex items-center gap-3 max-w-3xl mx-auto">
-            <Button variant="ghost" size="sm" className="p-2" disabled>
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              className="hidden"
+              onChange={(event) => {
+                const files = Array.from(event.target.files || []);
+                setSelectedFiles(files);
+              }}
+            />
+            <Button
+              variant="ghost"
+              size="sm"
+              className="p-2"
+              disabled={!activeChatId || sendStatus === "loading"}
+              onClick={() => fileInputRef.current?.click()}
+            >
               <Paperclip className="w-5 h-5 text-gray-500" />
             </Button>
             <Input
@@ -557,7 +720,7 @@ const ChatMessagingInterface = () => {
             </Button>
             <Button
               className="bg-gray-900 hover:bg-gray-800 text-white"
-              disabled={!activeChatId || !message.trim() || sendStatus === "loading"}
+              disabled={!activeChatId || (!message.trim() && !selectedFiles.length) || sendStatus === "loading"}
               onClick={handleSendMessage}
             >
               {sendStatus === "loading" ? t('sending') : t('send')}

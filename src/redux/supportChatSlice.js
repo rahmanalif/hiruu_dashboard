@@ -260,7 +260,7 @@ export const fetchSupportChatMessages = createAsyncThunk(
 
 export const sendSupportChatMessage = createAsyncThunk(
   "supportChats/sendSupportChatMessage",
-  async ({ chatId, content, type = "text" }, { getState, rejectWithValue }) => {
+  async ({ chatId, content, type = "text", mediaFiles = [] }, { getState, rejectWithValue }) => {
     const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
     if (!baseUrl) {
       return rejectWithValue("Missing NEXT_PUBLIC_API_BASE_URL");
@@ -270,8 +270,9 @@ export const sendSupportChatMessage = createAsyncThunk(
       return rejectWithValue("Missing support chat id");
     }
 
-    if (!content?.trim()) {
-      return rejectWithValue("Message content is required");
+    const trimmedContent = content?.trim() || "";
+    if (!trimmedContent && !mediaFiles.length) {
+      return rejectWithValue("Message content or media is required");
     }
 
     const accessToken = getAccessToken(getState());
@@ -280,8 +281,13 @@ export const sendSupportChatMessage = createAsyncThunk(
     }
 
     const formData = new FormData();
-    formData.append("content", content.trim());
-    formData.append("type", type);
+    if (trimmedContent) {
+      formData.append("content", trimmedContent);
+    }
+    formData.append("type", mediaFiles.length ? type || "file" : type);
+    mediaFiles.forEach((file) => {
+      formData.append("media", file);
+    });
 
     let response;
     try {
@@ -386,6 +392,23 @@ const supportChatSlice = createSlice({
           : [...state.activeChatMessages, nextMessage];
       }
 
+      const existingChatIndex = state.chats.findIndex((chat) => chat.id === chatRoomId);
+
+      if (existingChatIndex === -1) {
+        state.chats = [
+          {
+            id: chatRoomId,
+            user: nextMessage.sender || null,
+            lastMessage: nextMessage,
+            lastMessageAt: nextMessage.createdAt || null,
+            unreadCount: chatRoomId === state.activeChatId ? 0 : 1,
+            isArchived: false,
+          },
+          ...state.chats,
+        ];
+        return;
+      }
+
       state.chats = state.chats.map((chat) => {
         if (chat.id !== chatRoomId) {
           return chat;
@@ -403,6 +426,105 @@ const supportChatSlice = createSlice({
           lastMessage: nextMessage,
           lastMessageAt: nextMessage.createdAt || chat.lastMessageAt,
           unreadCount: nextUnreadCount,
+        };
+      });
+    },
+    updateUserPresence(state, action) {
+      const { userId, isOnline, lastSeen } = action.payload || {};
+
+      if (!userId) {
+        return;
+      }
+
+      const patchPresence = (user) => {
+        if (!user || user.id !== userId) {
+          return user;
+        }
+
+        return {
+          ...user,
+          isOnline,
+          lastSeen: isOnline ? null : (lastSeen || user.lastSeen || new Date().toISOString()),
+        };
+      };
+
+      state.chats = state.chats.map((chat) => ({
+        ...chat,
+        user: patchPresence(chat.user),
+      }));
+
+      if (state.activeChatDetails) {
+        state.activeChatDetails = {
+          ...state.activeChatDetails,
+          user: patchPresence(state.activeChatDetails.user),
+          participants: Array.isArray(state.activeChatDetails.participants)
+            ? state.activeChatDetails.participants.map((participant) => ({
+                ...participant,
+                user: patchPresence(participant.user),
+              }))
+            : state.activeChatDetails.participants,
+        };
+      }
+    },
+    applyMessageReadReceipt(state, action) {
+      const { chatRoomId, messageId, userId, userName, userAvatar, readAt } = action.payload || {};
+
+      if (!chatRoomId || !userId) {
+        return;
+      }
+
+      const nextReceipt = {
+        id: `${messageId || "bulk"}-${userId}`,
+        messageId: messageId || null,
+        userId,
+        readAt: readAt || new Date().toISOString(),
+        user: {
+          id: userId,
+          name: userName || null,
+          avatar: userAvatar || null,
+        },
+      };
+
+      const attachReceipt = (message) => {
+        const receipts = Array.isArray(message.readReceipts) ? message.readReceipts : [];
+        const alreadyExists = receipts.some((receipt) => receipt.userId === userId);
+
+        if (alreadyExists) {
+          return message;
+        }
+
+        return {
+          ...message,
+          readReceipts: [...receipts, { ...nextReceipt, messageId: message.id }],
+        };
+      };
+
+      if (chatRoomId === state.activeChatId) {
+        state.activeChatMessages = state.activeChatMessages.map((message) => {
+          if (messageId) {
+            return message.id === messageId ? attachReceipt(message) : message;
+          }
+
+          return message.senderId !== userId ? attachReceipt(message) : message;
+        });
+      }
+
+      state.chats = state.chats.map((chat) => {
+        if (chat.id !== chatRoomId || !chat.lastMessage) {
+          return chat;
+        }
+
+        if (messageId && chat.lastMessage.id !== messageId) {
+          return chat;
+        }
+
+        if (!messageId && chat.lastMessage.senderId === userId) {
+          return chat;
+        }
+
+        return {
+          ...chat,
+          lastMessage: attachReceipt(chat.lastMessage),
         };
       });
     },
@@ -540,5 +662,5 @@ const supportChatSlice = createSlice({
   },
 });
 
-export const { setActiveChat, appendIncomingMessage } = supportChatSlice.actions;
+export const { setActiveChat, appendIncomingMessage, updateUserPresence, applyMessageReadReceipt } = supportChatSlice.actions;
 export default supportChatSlice.reducer;

@@ -73,6 +73,37 @@ const toTitleCase = (value) =>
     .trim()
     .replace(/\b\w/g, (char) => char.toUpperCase());
 
+const getBusinessInitials = (name) => {
+  if (!name) {
+    return 'BS';
+  }
+
+  return name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() || '')
+    .join('') || 'BS';
+};
+
+const UserBusinessLogo = ({ src, name }) => {
+  const [imageFailed, setImageFailed] = useState(false);
+  const hasImage = Boolean(src) && !imageFailed;
+
+  return hasImage ? (
+    <img
+      src={src}
+      alt={name || 'Business logo'}
+      className="h-8 w-8 shrink-0 rounded-full object-cover"
+      onError={() => setImageFailed(true)}
+    />
+  ) : (
+    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-sky-50 via-white to-cyan-100 text-[10px] font-semibold text-sky-700 ring-1 ring-sky-100">
+      {getBusinessInitials(name)}
+    </div>
+  );
+};
+
 const summarizeLogDescription = (log) => {
   const directDescription = pickFirst(
     log.message,
@@ -981,11 +1012,7 @@ export default function UserProfileActivity({ userId }) {
                           key={business.id}
                           className="relative flex h-11 items-center gap-2 rounded-[12px] border border-[#EBEBEB] bg-white px-3 py-[6px] shadow-[inset_0_1px_1px_rgba(0,0,0,0.04),0_1px_4px_rgba(0,0,0,0.05),0_6px_24px_rgba(0,0,0,0.04)]"
                         >
-                          <img
-                            src={business.logo || '/BProfile.png'}
-                            alt=""
-                            className="h-8 w-8 shrink-0 rounded-full object-cover"
-                          />
+                          <UserBusinessLogo src={business.logo} name={business.name} />
                           <div className="min-w-0 text-[#11293A]">
                             {hasValue(business.name) ? (
                               <div className="truncate text-sm font-semibold leading-5">{business.name}</div>
