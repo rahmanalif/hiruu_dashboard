@@ -82,6 +82,43 @@ const getInitials = (name) => {
     .join("");
 };
 
+const getMessageAttachments = (chatMessage) => {
+  if (Array.isArray(chatMessage?.attachments)) {
+    return chatMessage.attachments;
+  }
+
+  return [];
+};
+
+const getMessagePreview = (chatMessage, t) => {
+  if (chatMessage?.content?.trim()) {
+    return chatMessage.content;
+  }
+
+  const attachments = getMessageAttachments(chatMessage);
+  if (!attachments.length) {
+    return t('noMessages');
+  }
+
+  if (attachments.length === 1) {
+    const [attachment] = attachments;
+    if (attachment?.type === 'image') {
+      return t('attachmentPreview.image');
+    }
+
+    return t('attachmentPreview.file');
+  }
+
+  return t('attachmentPreview.multiple', { count: attachments.length });
+};
+
+const isImageAttachment = (attachment) => {
+  const type = String(attachment?.type || '').toLowerCase();
+  const mimeType = String(attachment?.mimeType || '').toLowerCase();
+
+  return type === 'image' || mimeType.startsWith('image/');
+};
+
 const ChatMessagingInterface = () => {
   const dispatch = useDispatch();
   const searchParams = useSearchParams();
@@ -283,8 +320,7 @@ const ChatMessagingInterface = () => {
           {filteredChats.map((chat) => {
             const isActive = chat.id === activeChat?.id;
             const userName = chat.user?.name || t('unknownUser');
-            const preview =
-              chat.lastMessage?.content || t('noMessages');
+            const preview = getMessagePreview(chat.lastMessage, t);
 
             return (
               <button
@@ -380,6 +416,7 @@ const ChatMessagingInterface = () => {
                 <div className="space-y-4">
                   {orderedMessages.map((chatMessage) => {
                     const isOwnMessage = chatMessage.senderId === currentUser?.id;
+                    const attachments = getMessageAttachments(chatMessage);
 
                     return (
                       <div
@@ -408,7 +445,68 @@ const ChatMessagingInterface = () => {
                                 : "bg-gray-100 text-gray-900"
                             }`}
                           >
-                            {chatMessage.content}
+                            {chatMessage.content ? (
+                              <p className="whitespace-pre-wrap break-words">
+                                {chatMessage.content}
+                              </p>
+                            ) : null}
+                            {attachments.length ? (
+                              <div className={chatMessage.content ? "mt-3 space-y-3" : "space-y-3"}>
+                                {attachments.map((attachment, index) => {
+                                  const attachmentLabel =
+                                    attachment?.fileName ||
+                                    attachment?.url?.split('/').pop() ||
+                                    t('attachmentPreview.file');
+
+                                  if (isImageAttachment(attachment)) {
+                                    return (
+                                      <a
+                                        key={`${chatMessage.id}-attachment-${index}`}
+                                        href={attachment.url}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="block overflow-hidden rounded-xl border border-black/10 bg-white/10"
+                                      >
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img
+                                          src={attachment.url}
+                                          alt={attachmentLabel}
+                                          className="max-h-64 w-full object-cover"
+                                        />
+                                      </a>
+                                    );
+                                  }
+
+                                  return (
+                                    <a
+                                      key={`${chatMessage.id}-attachment-${index}`}
+                                      href={attachment.url}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className={`flex items-center gap-3 rounded-xl border px-3 py-2 ${
+                                        isOwnMessage
+                                          ? "border-white/20 bg-white/10 text-white"
+                                          : "border-gray-200 bg-white text-gray-900"
+                                      }`}
+                                    >
+                                      <Paperclip className="h-4 w-4 shrink-0" />
+                                      <div className="min-w-0">
+                                        <p className="truncate text-sm font-medium">
+                                          {attachmentLabel}
+                                        </p>
+                                        <p
+                                          className={`text-xs ${
+                                            isOwnMessage ? "text-blue-100" : "text-gray-500"
+                                          }`}
+                                        >
+                                          {attachment?.mimeType || attachment?.type || t('attachmentLabel')}
+                                        </p>
+                                      </div>
+                                    </a>
+                                  );
+                                })}
+                              </div>
+                            ) : null}
                           </div>
                           <div className="flex items-center gap-1 mt-1 text-xs text-gray-500">
                             {isOwnMessage ? (

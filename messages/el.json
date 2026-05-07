@@ -269,7 +269,13 @@
     "participants": "Συμμετέχοντες",
     "noParticipants": "Δεν βρέθηκαν συμμετέχοντες.",
     "latestMessage": "Τελευταίο Μήνυμα",
-    "noLatest": "Δεν υπάρχει διαθέσιμο τελευταίο μήνυμα."
+    "noLatest": "Δεν υπάρχει διαθέσιμο τελευταίο μήνυμα.",
+    "attachmentLabel": "Συνημμένο",
+    "attachmentPreview": {
+      "image": "Συνημμένη εικόνα",
+      "file": "Συνημμένο αρχείο",
+      "multiple": "{count} συνημμένα"
+    }
   },
   "Settings": {
     "title": "Ρυθμίσεις",

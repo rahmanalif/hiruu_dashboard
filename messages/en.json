@@ -269,7 +269,13 @@
     "participants": "Participants",
     "noParticipants": "No participants found.",
     "latestMessage": "Latest Message",
-    "noLatest": "No latest message available."
+    "noLatest": "No latest message available.",
+    "attachmentLabel": "Attachment",
+    "attachmentPreview": {
+      "image": "Image attachment",
+      "file": "File attachment",
+      "multiple": "{count} attachments"
+    }
   },
   "Settings": {
     "title": "Settings",
