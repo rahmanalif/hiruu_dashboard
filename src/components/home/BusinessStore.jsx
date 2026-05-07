@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -63,6 +64,7 @@ const isPremiumPlan = (value) => value === true || value === "true" || value ===
 
 const BusinessManagement = () => {
   const dispatch = useDispatch();
+  const searchParams = useSearchParams();
   const t = useTranslations();
   const tb = useTranslations('Business');
   const { businesses, pagination, status, error } = useSelector((state) => state.businesses);
@@ -71,6 +73,8 @@ const BusinessManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [openStoreId, setOpenStoreId] = useState(null);
   const [storePopupPosition, setStorePopupPosition] = useState(null);
+  const statusFilter = searchParams.get('status');
+  const isUnverifiedOnly = statusFilter === 'unverified';
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -114,6 +118,14 @@ const BusinessManagement = () => {
     [businesses, t, tb]
   );
 
+  const visibleBusinesses = useMemo(() => {
+    if (!isUnverifiedOnly) {
+      return normalizedBusinesses;
+    }
+
+    return normalizedBusinesses.filter((business) => !business.isVerified && !business.isDeleted);
+  }, [isUnverifiedOnly, normalizedBusinesses]);
+
   if (selectedBusiness) {
     return (
       <BusinessProfile
@@ -134,7 +146,12 @@ const BusinessManagement = () => {
         <Card className="gap-0 py-0">
           <CardHeader className="border-b bg-[#ECF7FE] p-4">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg font-semibold text-gray-900">{tb('registered')}</CardTitle>
+              <div>
+                <CardTitle className="text-lg font-semibold text-gray-900">{tb('registered')}</CardTitle>
+                {isUnverifiedOnly ? (
+                  <p className="mt-1 text-sm text-gray-500">{t('Overview.pendingActions.verification.subtitle', { count: visibleBusinesses.length })}</p>
+                ) : null}
+              </div>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
                 <Input
@@ -177,8 +194,8 @@ const BusinessManagement = () => {
                       {error}
                     </TableCell>
                   </TableRow>
-                ) : normalizedBusinesses.length ? (
-                  normalizedBusinesses.map((business) => (
+                ) : visibleBusinesses.length ? (
+                  visibleBusinesses.map((business) => (
                     <TableRow key={business.id}>
                       <TableCell className="font-medium text-gray-900">
                         <div className="relative inline-block">
@@ -255,7 +272,7 @@ const BusinessManagement = () => {
                 ) : (
                   <TableRow>
                     <TableCell colSpan={8} className="text-center text-gray-500">
-                      {tb('table.noData')}
+                      {isUnverifiedOnly ? t('Overview.pendingActions.verification.subtitle', { count: 0 }) : tb('table.noData')}
                     </TableCell>
                   </TableRow>
                 )}

@@ -48,7 +48,7 @@
       "subtitle": "Ελέγξτε τις πιο επείγουσες εσωτερικές εργασίες που περιμένουν ενέργεια.",
       "open": "ανοιχτά",
       "queueStatus": "Κατάσταση ουράς",
-      "queueStatusSubtitle": "{count} στοιχεία χρειάζονται έλεγχο σε επαλήθευση, συνομιλία και αναφορές.",
+      "queueStatusSubtitle": "{count} στοιχεία χρειάζονται έλεγχο σε επαλήθευση και συνομιλία.",
       "verification": {
         "title": "Επαλήθευση",
         "subtitle": "{count} καταστήματα αναμένουν επαλήθευση",
@@ -212,6 +212,9 @@
     "table": {
       "invoiceNumber": "Αριθμός Τιμολογίου",
       "transactionId": "ID Συναλλαγής",
+      "userName": "Όνομα Χρήστη",
+      "fullUserId": "Πλήρες ID Χρήστη",
+      "viewUser": "Προβολή Χρήστη",
       "amounts": "Ποσά",
       "useCoupon": "Χρήση Κουπονιού",
       "paymentMethod": "Τρόπος Πληρωμής",
@@ -377,7 +380,9 @@
     },
     "members": {
       "title": "Μέλη",
-      "noRoles": "Δεν βρέθηκαν ρόλοι."
+      "noRoles": "Δεν βρέθηκαν ρόλοι.",
+      "noMembers": "Δεν βρέθηκαν μέλη.",
+      "viewProfile": "Προβολή Προφίλ"
     },
     "verify": {
       "button": "Verify Business",

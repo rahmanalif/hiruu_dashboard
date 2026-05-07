@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { readStoredAuth, resolveAccessToken } from '@/lib/auth';
 import { useTranslations } from 'next-intl';
+import { useRouter } from '@/routing';
 
 // Table components inline
 const Table = ({ children, ...props }) => (
@@ -27,8 +28,7 @@ import {
   Filter,
   ChevronRight,
   ShieldCheck,
-  MessageSquare,
-  AlertCircle
+  MessageSquare
 } from 'lucide-react';
 import BusinessProfile from '../buissness/BusinessProfile';
 import { fetchBusinessesQuery } from '@/redux/businessesSlice';
@@ -165,8 +165,7 @@ const buildPendingActions = (payload, t) => {
 
   const verificationCount = toNumber(metrics.verification);
   const supportChatCount = toNumber(metrics.supportChat);
-  const reportsCount = toNumber(metrics.reports);
-  const openCount = verificationCount + supportChatCount + reportsCount;
+  const openCount = verificationCount + supportChatCount;
 
   return {
     openCount,
@@ -180,7 +179,8 @@ const buildPendingActions = (payload, t) => {
         icon: ShieldCheck,
         iconColor: 'text-blue-500',
         iconBg: 'bg-blue-100',
-        buttonColor: 'bg-blue-500 hover:bg-blue-600'
+        buttonColor: 'bg-blue-500 hover:bg-blue-600',
+        actionKey: 'verification',
       },
       {
         title: t('pendingActions.supportChat.title'),
@@ -190,17 +190,8 @@ const buildPendingActions = (payload, t) => {
         icon: MessageSquare,
         iconColor: 'text-orange-500',
         iconBg: 'bg-orange-100',
-        buttonColor: 'bg-orange-500 hover:bg-orange-600'
-      },
-      {
-        title: t('pendingActions.reports.title'),
-        subtitle: t('pendingActions.reports.subtitle', { count: reportsCount }),
-        action: t('pendingActions.reports.action'),
-        color: 'bg-red-50 border-red-100',
-        icon: AlertCircle,
-        iconColor: 'text-red-500',
-        iconBg: 'bg-red-100',
-        buttonColor: 'bg-red-500 hover:bg-red-600'
+        buttonColor: 'bg-orange-500 hover:bg-orange-600',
+        actionKey: 'supportChat',
       }
     ]
   };
@@ -209,6 +200,7 @@ const buildPendingActions = (payload, t) => {
 const Overview = () => {
   const dispatch = useDispatch();
   const t = useTranslations('Overview');
+  const router = useRouter();
   
   const periodOptions = [
     { label: t('periods.daily'), value: 'daily' },
@@ -333,6 +325,17 @@ const Overview = () => {
     return 'bg-gray-100 text-gray-800';
   };
 
+  const handlePendingActionClick = (actionKey) => {
+    if (actionKey === 'verification') {
+      router.push('/business-store?status=unverified');
+      return;
+    }
+
+    if (actionKey === 'supportChat') {
+      router.push('/support-chat');
+    }
+  };
+
   if (selectedBusiness) {
     return (
       <BusinessProfile 
@@ -441,6 +444,7 @@ const Overview = () => {
                     </div>
                     <Button
                       size="sm"
+                      onClick={() => handlePendingActionClick(action.actionKey)}
                       className={`${action.buttonColor} text-white rounded-full px-5 h-8 text-xs font-medium`}
                     >
                       {action.action}

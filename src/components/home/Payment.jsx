@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { fetchTransactions } from '@/redux/transactionsSlice';
+import { Link } from '@/routing';
 import { useTranslations } from 'next-intl';
 
 const formatCurrency = (amount, currency) => {
@@ -38,6 +39,17 @@ const formatDate = (value) => {
   });
 };
 
+const getPopupPosition = (triggerRect, popupWidth) => {
+  const viewportPadding = 16;
+  const top = Math.min(triggerRect.bottom + 8, window.innerHeight - 80);
+  const left = Math.min(
+    Math.max(triggerRect.left, viewportPadding),
+    window.innerWidth - popupWidth - viewportPadding
+  );
+
+  return { top, left };
+};
+
 const getStatusClasses = (status) => {
   const normalizedStatus = (status || '').toLowerCase();
 
@@ -62,6 +74,8 @@ const PaymentsTable = () => {
   const { transactions, pagination, status, error } = useSelector((state) => state.transactions);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [openUserId, setOpenUserId] = useState(null);
+  const [userPopupPosition, setUserPopupPosition] = useState(null);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -77,6 +91,21 @@ const PaymentsTable = () => {
     return () => clearTimeout(timeoutId);
   }, [currentPage, dispatch, searchTerm]);
 
+  useEffect(() => {
+    const handleViewportChange = () => {
+      setOpenUserId(null);
+      setUserPopupPosition(null);
+    };
+
+    window.addEventListener("resize", handleViewportChange);
+    window.addEventListener("scroll", handleViewportChange, true);
+
+    return () => {
+      window.removeEventListener("resize", handleViewportChange);
+      window.removeEventListener("scroll", handleViewportChange, true);
+    };
+  }, []);
+
   const translateStatus = (status, t) => {
     const key = (status || '').toLowerCase();
     if (['paid', 'success', 'completed', 'pending', 'failed', 'cancelled'].includes(key)) {
@@ -91,6 +120,13 @@ const PaymentsTable = () => {
         id: payment.id,
         invoiceNumber: payment.id || 'N/A',
         transactionId: payment.transactionId || payment.id || 'N/A',
+        userId: payment.userId || payment.user?.id || 'N/A',
+        userName:
+          payment.user?.name ||
+          payment.userName ||
+          payment.customerName ||
+          payment.meta?.userName ||
+          'N/A',
         amount: formatCurrency(payment.amount, payment.meta?.currency),
         coupon: payment.coupon?.code || payment.couponId || '-',
         method: payment.method ? payment.method.charAt(0).toUpperCase() + payment.method.slice(1) : 'N/A',
@@ -135,6 +171,7 @@ const PaymentsTable = () => {
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">{t('table.invoiceNumber')}</th>
                     <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">{t('table.transactionId')}</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">{t('table.userName')}</th>
                     <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">{t('table.amounts')}</th>
                     <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">{t('table.useCoupon')}</th>
                     <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-600">{t('table.paymentMethod')}</th>
@@ -145,13 +182,13 @@ const PaymentsTable = () => {
                 <tbody className="divide-y divide-gray-200 bg-white">
                   {status === 'loading' ? (
                     <tr>
-                      <td colSpan={7} className="px-6 py-8 text-center text-sm text-gray-500">
+                      <td colSpan={8} className="px-6 py-8 text-center text-sm text-gray-500">
                         {t('table.loading')}
                       </td>
                     </tr>
                   ) : error ? (
                     <tr>
-                      <td colSpan={7} className="px-6 py-8 text-center text-sm text-red-500">
+                      <td colSpan={8} className="px-6 py-8 text-center text-sm text-red-500">
                         {error}
                       </td>
                     </tr>
@@ -160,6 +197,65 @@ const PaymentsTable = () => {
                       <tr key={payment.id} className="hover:bg-gray-50">
                         <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">{payment.invoiceNumber}</td>
                         <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">{payment.transactionId}</td>
+                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                          {payment.userId !== 'N/A' ? (
+                            <div className="relative inline-block">
+                              <button
+                                type="button"
+                                className="font-medium text-gray-900 hover:text-blue-600"
+                                onClick={(event) => {
+                                  if (openUserId === payment.id) {
+                                    setOpenUserId(null);
+                                    setUserPopupPosition(null);
+                                    return;
+                                  }
+
+                                  setUserPopupPosition(
+                                    getPopupPosition(event.currentTarget.getBoundingClientRect(), 288)
+                                  );
+                                  setOpenUserId(payment.id);
+                                }}
+                              >
+                                {payment.userName}
+                              </button>
+                              {openUserId === payment.id && userPopupPosition ? (
+                                <>
+                                  <button
+                                    type="button"
+                                    aria-label="Close payment user ID popup"
+                                    onClick={() => {
+                                      setOpenUserId(null);
+                                      setUserPopupPosition(null);
+                                    }}
+                                    className="fixed inset-0 z-10 cursor-default"
+                                  />
+                                  <div
+                                    className="fixed z-20 w-72 rounded-lg border border-gray-200 bg-white p-3 text-left shadow-lg"
+                                    style={userPopupPosition}
+                                  >
+                                    <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-500">
+                                      {t('table.fullUserId')}
+                                    </p>
+                                    <p className="mb-3 break-all text-sm text-gray-900">
+                                      {payment.userId}
+                                    </p>
+                                    <Link href={`/users/${payment.userId}`}>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="w-full rounded-full border-blue-600 text-blue-600 hover:bg-blue-50"
+                                      >
+                                        {t('table.viewUser')}
+                                      </Button>
+                                    </Link>
+                                  </div>
+                                </>
+                              ) : null}
+                            </div>
+                          ) : (
+                            payment.userName
+                          )}
+                        </td>
                         <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">{payment.amount}</td>
                         <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">{payment.coupon}</td>
                         <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">{payment.method}</td>
@@ -173,7 +269,7 @@ const PaymentsTable = () => {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={7} className="px-6 py-8 text-center text-sm text-gray-500">
+                      <td colSpan={8} className="px-6 py-8 text-center text-sm text-gray-500">
                         {t('table.noData')}
                       </td>
                     </tr>

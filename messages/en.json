@@ -48,7 +48,7 @@
       "subtitle": "Review the most urgent internal tasks waiting for action.",
       "open": "open",
       "queueStatus": "Queue status",
-      "queueStatusSubtitle": "{count} items need review across verification, chat, and reports.",
+      "queueStatusSubtitle": "{count} items need review across verification and chat.",
       "verification": {
         "title": "Verification",
         "subtitle": "{count} stores awaiting verification",
@@ -212,6 +212,9 @@
     "table": {
       "invoiceNumber": "Invoice Number",
       "transactionId": "Transaction ID",
+      "userName": "User Name",
+      "fullUserId": "Full User ID",
+      "viewUser": "View User",
       "amounts": "Amounts",
       "useCoupon": "Use Coupon",
       "paymentMethod": "Payment Method",
@@ -377,7 +380,9 @@
     },
     "members": {
       "title": "Members",
-      "noRoles": "No roles found."
+      "noRoles": "No roles found.",
+      "noMembers": "No members found.",
+      "viewProfile": "View Profile"
     },
     "verify": {
       "button": "Verify Business",

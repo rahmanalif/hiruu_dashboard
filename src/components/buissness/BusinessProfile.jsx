@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   MapPin,
   Users,
@@ -22,6 +23,7 @@ import {
 import BanBusinessModal from '@/components/modals/BanBusinessModal';
 import { readStoredAuth, resolveAccessToken } from '@/lib/auth';
 import { useTranslations, useLocale } from 'next-intl';
+import { Link } from '@/routing';
 
 const getAccessToken = () => resolveAccessToken(readStoredAuth()?.tokens);
 
@@ -254,6 +256,57 @@ const mapActivityLogItem = (log, index, locale) => ({
   category: classifyActivityCategory(log),
 });
 
+const getBusinessInitials = (name) => {
+  if (!name) {
+    return 'BS';
+  }
+
+  return name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() || '')
+    .join('') || 'BS';
+};
+
+const BusinessLogo = ({ src, name }) => {
+  const [imageFailed, setImageFailed] = useState(false);
+  const hasImage = Boolean(src) && !imageFailed;
+
+  return (
+    <div className="h-16 w-16 overflow-hidden rounded-full border border-sky-100 bg-white shadow-sm">
+      {hasImage ? (
+        <img
+          src={src}
+          alt={name}
+          className="h-full w-full object-cover"
+          onError={() => setImageFailed(true)}
+        />
+      ) : (
+        <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-sky-50 via-white to-cyan-100 text-sky-700">
+          <Briefcase className="mb-1 h-4 w-4" />
+          <span className="px-1 text-[10px] font-semibold tracking-wide">
+            {getBusinessInitials(name)}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const getUserInitials = (name) => {
+  if (!name) {
+    return 'U';
+  }
+
+  return name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() || '')
+    .join('') || 'U';
+};
+
 const BusinessProfile = ({ business, onBack }) => {
   const t = useTranslations();
   const tp = useTranslations('BusinessProfile');
@@ -439,7 +492,7 @@ const BusinessProfile = ({ business, onBack }) => {
       count: roleItem?._count?.employments ?? 0,
     }));
     const members = employments.map((employment) => ({
-      id: employment?.id,
+      id: pickFirst(employment?.user?.id, employment?.userId, employment?.id),
       name: pickFirst(employment?.user?.name, employment?.user?.email, 'Unknown user'),
       role: pickFirst(employment?.role?.role?.name, employment?.role?.name, 'Employee'),
       avatar: employment?.user?.avatar || '',
@@ -449,7 +502,7 @@ const BusinessProfile = ({ business, onBack }) => {
       id: pickFirst(data.id, data._id, businessId),
       name: pickFirst(data.name, business?.name, 'Business'),
       description: pickFirst(data.description, 'No description available.'),
-      logo: pickFirst(data.logo, business?.logo, '/BProfile.png'),
+      logo: pickFirst(data.logo, business?.logo, ''),
       coverPhoto: pickFirst(data.coverPhoto, business?.coverPhoto, ''),
       location: pickFirst(address.address, [address.state, address.country].filter(Boolean).join(', '), 'N/A'),
       phone: pickFirst([data.countryCode, data.phoneNumber].filter(Boolean).join(' '), business?.phone, 'N/A'),
@@ -560,13 +613,7 @@ const BusinessProfile = ({ business, onBack }) => {
           <Card>
             <CardContent className="p-6">
               <div className="mb-6 flex items-start space-x-4 rounded-3xl bg-[#ECF7FE] px-8 py-6">
-                <div className="h-16 w-16 overflow-hidden rounded-full bg-white">
-                  <img
-                    src={profile.logo}
-                    alt={profile.name}
-                    className="h-full w-full object-cover"
-                  />
-                </div>
+                <BusinessLogo src={profile.logo} name={profile.name} />
                 <div className="flex-1">
                   <div className="mb-1 flex items-center space-x-2">
                     <h2 className="text-lg font-semibold">{profile.name}</h2>
@@ -734,6 +781,46 @@ const BusinessProfile = ({ business, onBack }) => {
                     ))
                   ) : (
                     <p className="text-sm text-gray-500">{tp('members.noRoles')}</p>
+                  )}
+                </div>
+                <div className="mt-4 space-y-3">
+                  {profile.members.length ? (
+                    profile.members.map((member) => (
+                      <div
+                        key={member.id}
+                        className="flex items-center justify-between gap-3 rounded-2xl border border-gray-200 bg-white px-3 py-3"
+                      >
+                        <div className="flex min-w-0 items-center gap-3">
+                          <Avatar className="h-10 w-10 border border-gray-200">
+                            <AvatarImage src={member.avatar} alt={member.name} />
+                            <AvatarFallback className="bg-sky-50 text-xs font-semibold text-sky-700">
+                              {getUserInitials(member.name)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium text-gray-900">
+                              {member.name}
+                            </p>
+                            <p className="truncate text-xs text-gray-500">
+                              {member.role}
+                            </p>
+                          </div>
+                        </div>
+                        {member.id ? (
+                          <Link href={`/users/${member.id}`} className="shrink-0">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="rounded-full border-blue-600 px-4 text-blue-600 hover:bg-blue-50"
+                            >
+                              {tp('members.viewProfile')}
+                            </Button>
+                          </Link>
+                        ) : null}
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-gray-500">{tp('members.noMembers')}</p>
                   )}
                 </div>
               </div>
